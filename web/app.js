@@ -394,6 +394,11 @@ async function checkUpdates() {
     try {
         // Consultar o repositório GitHub para pegar o version.json
         const response = await fetch('https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main/version.json', { cache: 'no-store' });
+        
+        if (!response.ok) {
+            throw new Error(`Servidor retornou erro ${response.status}. Certifique-se de que o repositório no GitHub é Público e não Privado.`);
+        }
+        
         const data = await response.json();
         const latestVersion = data.version; 
         
