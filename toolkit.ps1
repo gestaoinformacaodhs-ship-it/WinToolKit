@@ -384,12 +384,17 @@ try {
                             Invoke-WebRequest -Uri $downloadUrl -OutFile "$env:TEMP\WinToolKit_Update.exe" -UseBasicParsing -ErrorAction Stop
                             
                             Write-Output "Download concluído."
-                            Write-Output "O WinToolKit será fechado para instalar a nova versão."
-                            Write-Output "O instalador abrirá automaticamente."
+                            Write-Output "Encerrando o WinToolKit para aplicar a atualização..."
                             
+                            # Fechar o processo WinToolKit para liberar o arquivo .exe antes de instalar
+                            Start-Sleep -Seconds 1
+                            Stop-Process -Name "WinToolKit" -Force -ErrorAction SilentlyContinue
+                            Start-Sleep -Seconds 2
+                            
+                            Write-Output "Iniciando instalador da nova versão..."
                             Start-Process -FilePath "$env:TEMP\WinToolKit_Update.exe"
                             
-                            Write-Output "[SUCESSO] Atualização engatilhada."
+                            Write-Output "[SUCESSO] Atualização engatilhada. O WinToolKit será fechado."
                         } catch {
                             Write-Output "[ERRO] Falha ao baixar ou iniciar a atualização: $_"
                         }
