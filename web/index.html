@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WinToolKit - Suporte Técnico Profissional</title>
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <!-- Premium Wrench Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠️</text></svg>">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-terminal"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>WinToolKit</h1>
+                    <span>DHS SUPORTE <span style="color:var(--cyan); font-weight:bold; font-size:10px; margin-left:5px;">v1.0.1</span></span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-item active" id="nav-dashboard">
+                    <i class="fa-solid fa-gauge-high"></i>
+                    <span>Painel Geral</span>
+                </a>
+                <a href="#cleanup" class="nav-item" id="nav-cleanup">
+                    <i class="fa-solid fa-broom-wide"></i>
+                    <i class="fa-solid fa-wind"></i>
+                    <span>Limpeza & Reparos</span>
+                </a>
+                <a href="#services" class="nav-item" id="nav-services">
+                    <i class="fa-solid fa-gears"></i>
+                    <span>Serviços do Sistema</span>
+                </a>
+                <a href="#console" class="nav-item" id="nav-console">
+                    <i class="fa-solid fa-rectangle-list"></i>
+                    <span>Console em Tempo Real</span>
+                </a>
+                <a href="#updates" class="nav-item" id="nav-updates">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                    <span>Atualizações</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <span class="status-dot pulsing"></span>
+                    <span id="server-status-text">Servidor Ativo</span>
+                </div>
+                <div class="session-info">
+                    <span id="session-port">Porta: 4040</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="app-header">
+                <div class="header-welcome">
+                    <h2>Ambiente Operacional Windows</h2>
+                    <p>Utilitários automatizados para otimização de rotinas de suporte.</p>
+                </div>
+                <div class="header-meta">
+                    <div class="meta-item">
+                        <i class="fa-solid fa-server"></i>
+                        <div>
+                            <span class="meta-label">Hostname</span>
+                            <span class="meta-value" id="info-hostname">Carregando...</span>
+                        </div>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <div>
+                            <span class="meta-label">Operador</span>
+                            <span class="meta-value" id="info-username">Carregando...</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Sections Container -->
+            <div class="content-scroll">
+                
+                <!-- Section: Dashboard -->
+                <section id="sect-dashboard" class="content-section">
+                    <div class="section-title">
+                        <h3><i class="fa-solid fa-circle-nodes"></i> Diagnóstico Rápido</h3>
+                        <p>Visão geral da integridade do hardware, rede e sistema operacional.</p>
+                    </div>
+
+                    <!-- Metrics Grid (Gauges) -->
+                    <div class="metrics-grid">
+                        <!-- Gauge Card: CPU -->
+                        <div class="gauge-card">
+                            <div class="gauge-header">
+                                <span class="gauge-title"><i class="fa-solid fa-microchip"></i> Processador</span>
+                                <span class="gauge-badge" id="cpu-badge">-- %</span>
+                            </div>
+                            <div class="gauge-visual">
+                                <svg class="progress-ring" width="160" height="160">
+                                    <circle class="progress-ring__background" cx="80" cy="80" r="70" />
+                                    <circle class="progress-ring__circle" id="cpu-ring" cx="80" cy="80" r="70" />
+                                </svg>
+                                <div class="gauge-value" id="cpu-text">0%</div>
+                            </div>
+                            <div class="gauge-details">
+                                <span id="info-cpu-model">Detectando processador...</span>
+                            </div>
+                        </div>
+
+                        <!-- Gauge Card: RAM -->
+                        <div class="gauge-card">
+                            <div class="gauge-header">
+                                <span class="gauge-title"><i class="fa-solid fa-memory"></i> Memória RAM</span>
+                                <span class="gauge-badge" id="ram-badge">-- / -- GB</span>
+                            </div>
+                            <div class="gauge-visual">
+                                <svg class="progress-ring" width="160" height="160">
+                                    <circle class="progress-ring__background" cx="80" cy="80" r="70" />
+                                    <circle class="progress-ring__circle" id="ram-ring" cx="80" cy="80" r="70" />
+                                </svg>
+                                <div class="gauge-value" id="ram-text">0%</div>
+                            </div>
+                            <div class="gauge-details">
+                                <span>Utilizado: <strong id="ram-used">0.0 GB</strong> | Disponível: <strong id="ram-free">0.0 GB</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- Gauge Card: Storage -->
+                        <div class="gauge-card">
+                            <div class="gauge-header">
+                                <span class="gauge-title"><i class="fa-solid fa-hard-drive"></i> Disco C:</span>
+                                <span class="gauge-badge" id="disk-badge">-- / -- GB</span>
+                            </div>
+                            <div class="gauge-visual">
+                                <svg class="progress-ring" width="160" height="160">
+                                    <circle class="progress-ring__background" cx="80" cy="80" r="70" />
+                                    <circle class="progress-ring__circle" id="disk-ring" cx="80" cy="80" r="70" />
+                                </svg>
+                                <div class="gauge-value" id="disk-text">0%</div>
+                            </div>
+                            <div class="gauge-details">
+                                <span>Espaço Livre: <strong id="disk-free">0 GB</strong> livres</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Details Stats Panels -->
+                    <div class="details-row">
+                        <!-- OS Info Panel -->
+                        <div class="details-panel flex-2">
+                            <h4><i class="fa-solid fa-windows"></i> Informações do Sistema</h4>
+                            <div class="info-list">
+                                <div class="info-row">
+                                    <span class="label">S.O. Instalado</span>
+                                    <span class="value" id="info-os-name">Carregando...</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Versão & Build</span>
+                                    <span class="value" id="info-os-version">Carregando...</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Tempo de Atividade (Uptime)</span>
+                                    <span class="value" id="info-uptime">Carregando...</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Instalação Original</span>
+                                    <span class="value" id="info-install-date">Carregando...</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Network Ping Panel -->
+                        <div class="details-panel flex-1">
+                            <h4><i class="fa-solid fa-network-wired"></i> Conectividade</h4>
+                            <div class="connection-status-box">
+                                <div class="ping-latency">
+                                    <span class="ping-number" id="net-ping">--</span>
+                                    <span class="ping-unit">ms</span>
+                                    <p class="ping-label">Latência (8.8.8.8)</p>
+                                </div>
+                                <div class="net-address-list">
+                                    <div class="net-address-row">
+                                        <span class="net-lbl">Endereço IPv4</span>
+                                        <span class="net-val" id="info-ipv4">Carregando...</span>
+                                    </div>
+                                    <div class="net-address-row">
+                                        <span class="net-lbl">Ping Externo</span>
+                                        <span class="net-val-badge" id="ping-status-badge">Conectando...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Cleanup & Repairs -->
+                <section id="sect-cleanup" class="content-section hidden">
+                    <div class="section-title">
+                        <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Manutenção & Otimizações</h3>
+                        <p>Gatilhos rápidos para restaurar performance e corrigir falhas comuns de rede e sistema.</p>
+                    </div>
+
+                    <div class="tools-grid">
+                        <!-- Tool 1: Temp Files Cleanup -->
+                        <div class="tool-card">
+                            <div class="tool-icon bg-cyan">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </div>
+                            <div class="tool-info">
+                                <h5>Limpeza de Arquivos Temporários</h5>
+                                <p>Limpa %TEMP%, Prefetch, Lixeira e cache do Windows Update para liberar espaço e otimizar velocidade.</p>
+                                <button class="btn btn-primary" onclick="runTool('cleanup_temp')">
+                                    <i class="fa-solid fa-play"></i> Iniciar Limpeza
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tool 2: Flush DNS & Network Reset -->
+                        <div class="tool-card">
+                            <div class="tool-icon bg-indigo">
+                                <i class="fa-solid fa-route"></i>
+                            </div>
+                            <div class="tool-info">
+                                <h5>Reparos Básicos de Rede (Flush DNS)</h5>
+                                <p>Libera/renova IP, limpa cache DNS e reinicia catálogos Winsock/TCP-IP para resolver falhas de conexão.</p>
+                                <button class="btn btn-indigo" onclick="runTool('repair_network')">
+                                    <i class="fa-solid fa-play"></i> Corrigir Rede
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tool 3: Gpupdate -->
+                        <div class="tool-card">
+                            <div class="tool-icon bg-emerald">
+                                <i class="fa-solid fa-arrows-spin"></i>
+                            </div>
+                            <div class="tool-info">
+                                <h5>Atualizar Políticas (GPUPDATE)</h5>
+                                <p>Força a sincronização imediata de políticas de grupo (GPOs) locais e de domínio no computador.</p>
+                                <button class="btn btn-emerald" onclick="runTool('gpupdate')">
+                                    <i class="fa-solid fa-arrows-spin"></i> Forçar Atualização
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tool 4: SFC Scan -->
+                        <div class="tool-card">
+                            <div class="tool-icon bg-amber">
+                                <i class="fa-solid fa-shield-halved"></i>
+                            </div>
+                            <div class="tool-info">
+                                <h5>Verificação do Sistema (SFC / DISM)</h5>
+                                <p>Varre arquivos protegidos do Windows (SFC) e executa o DISM para corrigir corrupções na imagem do sistema.</p>
+                                <div class="tool-btn-group">
+                                    <button class="btn btn-amber" onclick="runTool('sfc_scan')">
+                                        <i class="fa-solid fa-magnifying-glass"></i> SFC Scan
+                                    </button>
+                                    <button class="btn btn-outline" onclick="runTool('dism_repair')">
+                                        <i class="fa-solid fa-wrench"></i> DISM Repair
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Services -->
+                <section id="sect-services" class="content-section hidden">
+                    <div class="section-title">
+                        <h3><i class="fa-solid fa-gears"></i> Controle de Serviços</h3>
+                        <p>Monitore e gerencie o estado de serviços operacionais fundamentais do Windows.</p>
+                    </div>
+
+                    <div class="services-container">
+                        <div class="services-header-actions">
+                            <span class="services-count"><strong id="srv-count">0</strong> serviços monitorados</span>
+                            <button class="btn btn-sm btn-outline" onclick="loadServices()">
+                                <i class="fa-solid fa-rotate"></i> Atualizar Lista
+                            </button>
+                        </div>
+
+                        <div class="services-table-wrapper">
+                            <table class="services-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nome Exibido</th>
+                                        <th>Nome do Serviço</th>
+                                        <th>Estado</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="services-list-tbody">
+                                    <tr>
+                                        <td colspan="4" class="text-center">Carregando lista de serviços...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Console -->
+                <section id="sect-console" class="content-section hidden">
+                    <div class="section-title">
+                        <h3><i class="fa-solid fa-terminal"></i> Console de Execução</h3>
+                        <p>Verifique o fluxo contínuo de registros, saídas de comandos e diagnósticos executados pelo toolkit.</p>
+                    </div>
+
+                    <div class="console-box">
+                        <div class="console-topbar">
+                            <div class="console-window-dots">
+                                <span class="dot dot-red"></span>
+                                <span class="dot dot-yellow"></span>
+                                <span class="dot dot-green"></span>
+                            </div>
+                            <span class="console-title">wintoolkit-terminal.log</span>
+                            <div class="console-actions">
+                                <button class="console-btn" title="Copiar logs para a área de transferência" onclick="copyConsoleLogs()">
+                                    <i class="fa-regular fa-copy"></i> Copiar Logs
+                                </button>
+                                <button class="console-btn" title="Limpar terminal" onclick="clearConsole()">
+                                    <i class="fa-solid fa-trash-can"></i> Limpar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="console-body" id="console-output">
+                            <div class="console-line line-info">[INFO] WinToolKit carregado. Pronto para receber requisições de suporte.</div>
+                            <div class="console-line line-warning">[AVISO] Certifique-se de executar este utilitário como Administrador para o correto funcionamento das automações.</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Updates -->
+                <section id="sect-updates" class="content-section hidden">
+                    <div class="section-title">
+                        <h3><i class="fa-solid fa-cloud-arrow-down"></i> Atualizações do Sistema</h3>
+                        <p>Verifique se há novas versões do WinToolKit disponíveis no servidor e atualize automaticamente.</p>
+                    </div>
+
+                    <div class="details-panel" style="max-width: 600px;">
+                        <h4>Status da Versão</h4>
+                        <div class="info-list" style="margin-top:15px;">
+                            <div class="info-row">
+                                <span class="label">Versão Atual:</span>
+                                <span class="value" id="current-version-text" style="font-weight:bold; color:var(--cyan);">v1.0.1</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Última Versão Disponível:</span>
+                                <span class="value" id="latest-version-text">Desconhecido</span>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 25px; display: flex; gap: 10px;">
+                            <button class="btn btn-primary" id="btn-check-update" onclick="checkUpdates()">
+                                <i class="fa-solid fa-arrows-rotate"></i> Verificar Atualização
+                            </button>
+                            <button class="btn btn-emerald hidden" id="btn-do-update" onclick="runTool('install_update')">
+                                <i class="fa-solid fa-download"></i> Baixar e Instalar Agora
+                            </button>
+                        </div>
+                        <p id="update-status-msg" style="margin-top: 15px; font-size: 13px; color: var(--text-muted);"></p>
+                    </div>
+                </section>
+                
+            </div>
+        </main>
+    </div>
+
+    <!-- Script Import -->
+    <script src="app.js"></script>
+</body>
+</html>
