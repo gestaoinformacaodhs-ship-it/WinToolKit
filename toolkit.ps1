@@ -195,7 +195,7 @@ try {
             # Ping Google DNS
             $pingLatency = -1
             try {
-                $ping = Test-Connection -ComputerName 8.8.8.8 -Count 1 -TimeoutMilliSecs 800 -ErrorAction SilentlyContinue
+                $ping = Test-Connection -ComputerName 8.8.8.8 -Count 1 -ErrorAction SilentlyContinue
                 if ($ping) {
                     $pingLatency = $ping.ResponseTime
                 }

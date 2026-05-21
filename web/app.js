@@ -402,7 +402,7 @@ async function checkUpdates() {
         const data = await response.json();
         const latestVersion = data.version; 
         
-        const currentVersion = "v1.0.1";
+        const currentVersion = "v1.0.2";
         
         latestVersionEl.textContent = latestVersion;
         
