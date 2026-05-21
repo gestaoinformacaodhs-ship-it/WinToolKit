@@ -686,10 +686,25 @@ namespace WinToolKit
             try
             {
                 SetProgress(2, "Fechando versoes antigas em execucao...");
-                foreach (Process p in Process.GetProcessesByName("WinToolKit"))
+                
+                // 1. Fechar a janela do navegador (Edge/Chrome em modo app)
+                foreach (Process p in Process.GetProcesses())
                 {
-                    try { p.Kill(); p.WaitForExit(2000); } catch { }
+                    try {
+                        if (!string.IsNullOrEmpty(p.MainWindowTitle) && p.MainWindowTitle.Contains("WinToolKit")) {
+                            p.CloseMainWindow();
+                            p.WaitForExit(1000);
+                        }
+                    } catch { }
                 }
+
+                // 2. Matar o processo WinToolKit (Launcher) e seus filhos (backend)
+                try {
+                    ProcessStartInfo psi = new ProcessStartInfo("taskkill", "/F /T /IM WinToolKit.exe");
+                    psi.CreateNoWindow = true;
+                    psi.UseShellExecute = false;
+                    Process.Start(psi).WaitForExit(2000);
+                } catch { }
 
                 SetProgress(5, "Criando pasta de instalacao...");
                 if (!Directory.Exists(targetDir)) Directory.CreateDirectory(targetDir);
