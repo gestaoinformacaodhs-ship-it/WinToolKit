@@ -378,17 +378,16 @@ try {
                     $scriptBlock = {
                         Write-Output "Iniciando download da atualização do WinToolKit..."
                         $downloadUrl = "https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main/Instalar.exe"
-                        $tempInstaller = "$env:TEMP\WinToolKit_Update.exe"
                         
                         try {
                             Write-Output "Baixando nova versão de: $downloadUrl"
-                            Invoke-WebRequest -Uri $downloadUrl -OutFile $tempInstaller -UseBasicParsing -ErrorAction Stop
+                            Invoke-WebRequest -Uri $downloadUrl -OutFile "$env:TEMP\WinToolKit_Update.exe" -UseBasicParsing -ErrorAction Stop
                             
                             Write-Output "Download concluído."
                             Write-Output "O WinToolKit será fechado para instalar a nova versão."
                             Write-Output "O instalador abrirá automaticamente."
                             
-                            Start-Process -FilePath $tempInstaller
+                            Start-Process -FilePath "$env:TEMP\WinToolKit_Update.exe"
                             
                             Write-Output "[SUCESSO] Atualização engatilhada."
                         } catch {
