@@ -685,6 +685,12 @@ namespace WinToolKit
         {
             try
             {
+                SetProgress(2, "Fechando versoes antigas em execucao...");
+                foreach (Process p in Process.GetProcessesByName("WinToolKit"))
+                {
+                    try { p.Kill(); p.WaitForExit(2000); } catch { }
+                }
+
                 SetProgress(5, "Criando pasta de instalacao...");
                 if (!Directory.Exists(targetDir)) Directory.CreateDirectory(targetDir);
 
