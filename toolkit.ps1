@@ -374,7 +374,7 @@ try {
                     }
                 }
                 "install_update" {
-                    # Legacy fallback - redirect to auto_update
+                    # Legacy fallback
                     $scriptBlock = {
                         Write-Output "[INFO] Redirecionando para atualizacao automatica..."
                         Write-Output "[SUCESSO] Use o botao 'Atualizar Automaticamente' para atualizar sem abrir o instalador."
@@ -382,15 +382,14 @@ try {
                 }
                 "auto_update" {
                     $scriptBlock = {
-                        $repoBase  = "https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main"
+                        $repoBase   = "https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main"
                         $installDir = $PSScriptRoot
                         $tempDir    = $env:TEMP
 
                         Write-Output "Iniciando atualizacao automatica do WinToolKit..."
                         Write-Output "Diretorio de instalacao: $installDir"
 
-                        # Helper to download a file with retry
-                        function Download-File {
+                        function Invoke-FileDownload {
                             param([string]$Url, [string]$Dest, [string]$Label)
                             Write-Output "Baixando $Label..."
                             $attempts = 0
@@ -398,7 +397,7 @@ try {
                                 $attempts++
                                 try {
                                     Invoke-WebRequest -Uri $Url -OutFile $Dest -UseBasicParsing -ErrorAction Stop
-                                    Write-Output "  OK: $Label baixado com sucesso."
+                                    Write-Output "  OK: $Label baixado."
                                     return $true
                                 } catch {
                                     if ($attempts -ge 3) {
@@ -411,7 +410,6 @@ try {
                             } while ($true)
                         }
 
-                        # ---- 1. Download web assets (can be replaced while running) ----
                         $webFiles = @(
                             @{ Url = "$repoBase/web/index.html"; Dest = "$installDir\web\index.html"; Label = "index.html" },
                             @{ Url = "$repoBase/web/style.css";  Dest = "$installDir\web\style.css";  Label = "style.css"  },
@@ -419,48 +417,42 @@ try {
                         )
                         $allOk = $true
                         foreach ($f in $webFiles) {
-                            $ok = Download-File -Url $f.Url -Dest $f.Dest -Label $f.Label
+                            $ok = Invoke-FileDownload -Url $f.Url -Dest $f.Dest -Label $f.Label
                             if (-not $ok) { $allOk = $false }
                         }
 
-                        # ---- 2. Download executables to temp ----
-                        $exeOk   = Download-File -Url "$repoBase/WinToolKit.exe" -Dest "$tempDir\WinToolKit_new.exe" -Label "WinToolKit.exe"
-                        $ps1Ok   = Download-File -Url "$repoBase/toolkit.ps1"    -Dest "$tempDir\toolkit_new.ps1"   -Label "toolkit.ps1"
-                        $verOk   = Download-File -Url "$repoBase/version.json"    -Dest "$tempDir\version_new.json"  -Label "version.json"
+                        $exeOk = Invoke-FileDownload -Url "$repoBase/WinToolKit.exe" -Dest "$tempDir\WinToolKit_new.exe" -Label "WinToolKit.exe"
+                        $ps1Ok = Invoke-FileDownload -Url "$repoBase/toolkit.ps1"    -Dest "$tempDir\toolkit_new.ps1"   -Label "toolkit.ps1"
+                        Invoke-FileDownload -Url "$repoBase/version.json" -Dest "$tempDir\version_new.json" -Label "version.json" | Out-Null
 
                         if (-not ($allOk -and $exeOk -and $ps1Ok)) {
                             Write-Output "[ERRO] Alguns arquivos nao puderam ser baixados. Atualizacao cancelada."
                             exit 1
                         }
 
-                        # ---- 3. Create deferred batch to replace locked files & restart ----
-                        $batchContent = @"
-@echo off
-chcp 65001 >nul
-title WinToolKit - Aplicando Atualizacao
-echo [WinToolKit] Aplicando atualizacao, aguarde...
-timeout /t 3 /nobreak >nul
+                        $nl = [System.Environment]::NewLine
+                        $bat  = "@echo off" + $nl
+                        $bat += "chcp 65001 >nul" + $nl
+                        $bat += "title WinToolKit - Aplicando Atualizacao" + $nl
+                        $bat += "echo Aplicando atualizacao, aguarde..." + $nl
+                        $bat += "timeout /t 3 /nobreak >nul" + $nl
+                        $bat += "copy /y " + [char]34 + "$tempDir\WinToolKit_new.exe" + [char]34 + " " + [char]34 + "$installDir\WinToolKit.exe" + [char]34 + " >nul 2>&1" + $nl
+                        $bat += "copy /y " + [char]34 + "$tempDir\toolkit_new.ps1" + [char]34 + "   " + [char]34 + "$installDir\toolkit.ps1" + [char]34 + "    >nul 2>&1" + $nl
+                        $bat += "copy /y " + [char]34 + "$tempDir\version_new.json" + [char]34 + "  " + [char]34 + "$installDir\version.json" + [char]34 + "   >nul 2>&1" + $nl
+                        $bat += "del " + [char]34 + "$tempDir\WinToolKit_new.exe" + [char]34 + " >nul 2>&1" + $nl
+                        $bat += "del " + [char]34 + "$tempDir\toolkit_new.ps1" + [char]34 + " >nul 2>&1" + $nl
+                        $bat += "del " + [char]34 + "$tempDir\version_new.json" + [char]34 + " >nul 2>&1" + $nl
+                        $bat += "echo Atualizacao aplicada. Reiniciando..." + $nl
+                        $bat += "timeout /t 1 /nobreak >nul" + $nl
+                        $bat += "start " + [char]34 + [char]34 + " " + [char]34 + "$installDir\WinToolKit.exe" + [char]34 + $nl
+                        $bat += "del " + [char]34 + "%~f0" + [char]34 + $nl
 
-copy /y "$tempDir\WinToolKit_new.exe" "$installDir\WinToolKit.exe" >nul 2>&1
-copy /y "$tempDir\toolkit_new.ps1"   "$installDir\toolkit.ps1"    >nul 2>&1
-copy /y "$tempDir\version_new.json"  "$installDir\version.json"   >nul 2>&1
-
-del "$tempDir\WinToolKit_new.exe" >nul 2>&1
-del "$tempDir\toolkit_new.ps1"   >nul 2>&1
-del "$tempDir\version_new.json"  >nul 2>&1
-
-echo [WinToolKit] Atualizacao aplicada. Reiniciando...
-timeout /t 1 /nobreak >nul
-start "" "$installDir\WinToolKit.exe"
-del "%~f0"
-"@"
                         $batchPath = "$tempDir\wintoolkit_updater.bat"
-                        Set-Content -Path $batchPath -Value $batchContent -Encoding ASCII -Force
+                        [System.IO.File]::WriteAllText($batchPath, $bat, [System.Text.Encoding]::ASCII)
 
-                        Write-Output "Arquivos baixados com sucesso. Agendando reinicio automatico..."
-                        Start-Process "cmd.exe" -ArgumentList "/c `"$batchPath`"" -WindowStyle Hidden
-
-                        Write-Output "[SUCESSO] Atualizacao agendada! O WinToolKit sera reiniciado automaticamente em alguns segundos."
+                        Write-Output "Arquivos baixados. Agendando reinicio automatico..."
+                        Start-Process "cmd.exe" -ArgumentList ("/c " + [char]34 + $batchPath + [char]34) -WindowStyle Hidden
+                        Write-Output "[SUCESSO] Atualizacao agendada! O WinToolKit sera reiniciado automaticamente."
                     }
                 }
             }
