@@ -793,17 +793,26 @@ namespace WinToolKit
 
                 // 2. Matar o processo WinToolKit (Launcher) e seus filhos (backend)
                 try {
-                    Log("Executando taskkill para WinToolKit.exe...");
+                    Log("Finalizando WinToolKit.exe via C#...");
+                    foreach (Process proc in Process.GetProcessesByName("WinToolKit")) {
+                        if (proc.Id != currentPid) {
+                            try {
+                                proc.Kill();
+                                proc.WaitForExit(3000);
+                            } catch (Exception pk) { Log("Falha kill direto: " + pk.Message); }
+                        }
+                    }
+                    Log("Executando taskkill backup para WinToolKit.exe...");
                     ProcessStartInfo psi = new ProcessStartInfo("taskkill", "/F /T /IM WinToolKit.exe");
                     psi.CreateNoWindow = true;
                     psi.UseShellExecute = false;
-                    Process proc = Process.Start(psi);
-                    if (proc != null) {
-                        proc.WaitForExit(2000);
-                        Log("Taskkill concluido com codigo: " + proc.ExitCode);
+                    Process pkProc = Process.Start(psi);
+                    if (pkProc != null) {
+                        pkProc.WaitForExit(3000);
                     }
+                    Thread.Sleep(1000); // Give OS time to release file handles
                 } catch (Exception ex) {
-                    Log("Erro ao executar taskkill: " + ex.Message);
+                    Log("Erro ao finalizar WinToolKit: " + ex.Message);
                 }
 
                 SetProgress(5, "Criando pasta de instalacao...");
@@ -822,34 +831,47 @@ namespace WinToolKit
                     Log("Pasta web criada.");
                 }
 
+                // Helper to write files with retry
+                Action<string, string> WriteFileWithRetry = (path, b64) => {
+                    for (int i = 0; i < 5; i++) {
+                        try {
+                            File.WriteAllBytes(path, Convert.FromBase64String(b64));
+                            Log("Gravado com sucesso: " + path);
+                            return;
+                        } catch (IOException ioEx) {
+                            Log(string.Format("Tentativa {0} falhou para {1}: {2}", i+1, path, ioEx.Message));
+                            Thread.Sleep(1500);
+                        }
+                    }
+                    // Last try without catch to let it throw and fail the install
+                    File.WriteAllBytes(path, Convert.FromBase64String(b64));
+                };
+
                 SetProgress(20, "Extraindo WinToolKit.exe...");
                 Log("Extraindo WinToolKit.exe...");
-                File.WriteAllBytes(Path.Combine(targetDir, "WinToolKit.exe"), Convert.FromBase64String(B64_LAUNCHER));
-                Log("WinToolKit.exe extraido com sucesso.");
+                WriteFileWithRetry(Path.Combine(targetDir, "WinToolKit.exe"), B64_LAUNCHER);
 
                 SetProgress(40, "Extraindo toolkit.ps1...");
                 Log("Extraindo toolkit.ps1...");
-                File.WriteAllBytes(Path.Combine(targetDir, "toolkit.ps1"), Convert.FromBase64String(B64_TOOLKIT));
-                Log("toolkit.ps1 extraido com sucesso.");
+                WriteFileWithRetry(Path.Combine(targetDir, "toolkit.ps1"), B64_TOOLKIT);
 
                 SetProgress(55, "Extraindo interface Web — index.html...");
                 Log("Extraindo index.html...");
-                File.WriteAllBytes(Path.Combine(webDir, "index.html"), Convert.FromBase64String(B64_HTML));
-                Log("index.html extraido.");
+                WriteFileWithRetry(Path.Combine(webDir, "index.html"), B64_HTML);
 
                 SetProgress(68, "Extraindo interface Web — style.css...");
                 Log("Extraindo style.css...");
-                File.WriteAllBytes(Path.Combine(webDir, "style.css"), Convert.FromBase64String(B64_CSS));
+                WriteFileWithRetry(Path.Combine(webDir, "style.css"), B64_CSS);
                 Log("style.css extraido.");
 
                 SetProgress(80, "Extraindo interface Web — app.js...");
                 Log("Extraindo app.js...");
-                File.WriteAllBytes(Path.Combine(webDir, "app.js"), Convert.FromBase64String(B64_JS));
+                WriteFileWithRetry(Path.Combine(webDir, "app.js"), B64_JS);
                 Log("app.js extraido.");
 
                 SetProgress(88, "Extraindo Desinstalar.exe...");
                 Log("Extraindo Desinstalar.exe...");
-                File.WriteAllBytes(Path.Combine(targetDir, "Desinstalar.exe"), Convert.FromBase64String(B64_UNINSTALLER));
+                WriteFileWithRetry(Path.Combine(targetDir, "Desinstalar.exe"), B64_UNINSTALLER);
                 Log("Desinstalar.exe extraido.");
 
                 SetProgress(92, "Finalizando extraindo...");
