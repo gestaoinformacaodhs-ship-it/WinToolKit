@@ -2,9 +2,11 @@
 const API_BASE = ''; // Same host as the dashboard
 const DIAGNOSTICS_POLL_INTERVAL = 3000; // 3 seconds
 const CIRCUMFERENCE = 2 * Math.PI * 70; // 439.822
+const CURRENT_VERSION = 'v1.0.9';
 
 let diagnosticsTimer = null;
 let activePollingJobs = new Map(); // jobId -> intervalId
+let _latestVersionAvailable = null; // cached for auto-update
 
 // Initialize the Application
 document.addEventListener('DOMContentLoaded', () => {
@@ -20,6 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Log startup
     logToConsole('Sistema carregado e conectado ao servidor local.', 'success');
+
+    // Auto-check for updates silently after 5 seconds
+    setTimeout(checkUpdatesOnStartup, 5000);
 });
 
 // 1. Navigation System
@@ -399,42 +404,190 @@ function copyConsoleLogs() {
 }
 
 // 7. Updates System
+
+/** Silent startup check - shows notification banner if update available */
+async function checkUpdatesOnStartup() {
+    try {
+        const timestamp = Date.now();
+        const response = await fetch(
+            `https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main/version.json?t=${timestamp}`,
+            { cache: 'no-store' }
+        );
+        if (!response.ok) return;
+        const data = await response.json();
+        const latestVersion = data.version;
+        if (latestVersion && latestVersion !== CURRENT_VERSION) {
+            _latestVersionAvailable = latestVersion;
+            showUpdateBanner(latestVersion);
+        }
+    } catch (_) {
+        // Silent - network error on startup check is non-critical
+    }
+}
+
+/** Show the floating update notification banner */
+function showUpdateBanner(latestVersion) {
+    const banner = document.getElementById('update-banner');
+    const title  = document.getElementById('update-banner-title');
+    const desc   = document.getElementById('update-banner-desc');
+    if (!banner) return;
+    title.textContent = `Nova versão disponível: ${latestVersion}`;
+    desc.textContent  = `Você está na ${CURRENT_VERSION}. Clique para atualizar automaticamente, sem abrir nenhum instalador.`;
+    banner.classList.remove('hidden', 'hiding');
+}
+
+/** Dismiss the banner with a slide-out animation */
+function dismissUpdateBanner() {
+    const banner = document.getElementById('update-banner');
+    if (!banner) return;
+    banner.classList.add('hiding');
+    setTimeout(() => banner.classList.add('hidden'), 380);
+}
+
+/** Perform silent / automatic update */
+async function performAutoUpdate() {
+    const btnInstall = document.getElementById('btn-banner-install');
+    const btnDo      = document.getElementById('btn-do-update');
+    const msgEl      = document.getElementById('update-status-msg');
+    const banner     = document.getElementById('update-banner');
+    const bannerDesc = document.getElementById('update-banner-desc');
+
+    // Disable buttons while updating
+    if (btnInstall) { btnInstall.disabled = true; btnInstall.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Baixando...'; }
+    if (btnDo)      { btnDo.disabled = true; }
+
+    // Add progress bar to banner
+    if (banner && !document.getElementById('update-progress-wrap')) {
+        const wrap = document.createElement('div');
+        wrap.id = 'update-progress-wrap';
+        wrap.className = 'update-progress-bar-wrap';
+        wrap.style.cssText = 'position:absolute;bottom:0;left:0;right:0;border-radius:0 0 18px 18px;margin:0;';
+        const bar = document.createElement('div');
+        bar.id = 'update-progress-bar';
+        bar.className = 'update-progress-bar';
+        bar.style.width = '15%';
+        wrap.appendChild(bar);
+        banner.style.position = 'relative';
+        banner.style.overflow = 'hidden';
+        banner.appendChild(wrap);
+    }
+
+    if (bannerDesc) bannerDesc.textContent = 'Baixando atualização em segundo plano...';
+    if (msgEl) { msgEl.textContent = 'Baixando atualização automática...'; msgEl.style.color = 'var(--cyan)'; }
+
+    // Navigate to console to show progress
+    const navConsole = document.getElementById('nav-console');
+    if (navConsole) navConsole.click();
+
+    logToConsole('[ATUALIZAÇÃO] Iniciando atualização automática do WinToolKit...', 'command');
+
+    try {
+        const res = await fetch(`${API_BASE}/api/action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'auto_update' })
+        });
+        if (!res.ok) throw new Error(`Servidor retornou HTTP ${res.status}`);
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Falha ao iniciar job de atualização.');
+
+        const jobId = data.jobId;
+        logToConsole(`[ATUALIZAÇÃO] Processo alocado. Monitorando execução...`, 'info');
+
+        // Animate progress bar while polling
+        let fakeProgress = 15;
+        const progressInterval = setInterval(() => {
+            if (fakeProgress < 85) {
+                fakeProgress += Math.random() * 8;
+                const bar = document.getElementById('update-progress-bar');
+                if (bar) bar.style.width = Math.min(fakeProgress, 85) + '%';
+            }
+        }, 600);
+
+        // Poll job status
+        const pollInterval = setInterval(async () => {
+            try {
+                const statusRes = await fetch(`${API_BASE}/api/job-status?jobId=${jobId}`);
+                const statusData = await statusRes.json();
+
+                if (statusData.newLogs && statusData.newLogs.length > 0) {
+                    statusData.newLogs.forEach(line => {
+                        const ltype = line.includes('[ERRO]') ? 'error'
+                                    : line.includes('[SUCESSO]') ? 'success'
+                                    : line.includes('[AVISO]') ? 'warning' : 'info';
+                        logToConsole(`[ATUALIZAÇÃO] ${line}`, ltype);
+                    });
+                }
+
+                if (statusData.status === 'completed') {
+                    clearInterval(pollInterval);
+                    clearInterval(progressInterval);
+                    const bar = document.getElementById('update-progress-bar');
+                    if (bar) bar.style.width = '100%';
+                    logToConsole('[ATUALIZAÇÃO] Atualização concluída! O WinToolKit será reiniciado automaticamente.', 'success');
+                    if (bannerDesc) bannerDesc.textContent = '✅ Atualização aplicada! Reiniciando...';
+                    if (msgEl) { msgEl.textContent = '✅ Atualização aplicada com sucesso! O WinToolKit será reiniciado.'; msgEl.style.color = 'var(--emerald)'; }
+                    // Hide update buttons
+                    if (btnDo) btnDo.classList.add('hidden');
+                    setTimeout(() => dismissUpdateBanner(), 3500);
+                } else if (statusData.status === 'failed') {
+                    clearInterval(pollInterval);
+                    clearInterval(progressInterval);
+                    throw new Error('Job de atualização falhou no servidor.');
+                }
+            } catch (pollErr) {
+                clearInterval(pollInterval);
+                clearInterval(progressInterval);
+                logToConsole(`[ATUALIZAÇÃO ERRO] Falha ao monitorar atualização: ${pollErr.message}`, 'error');
+                if (btnInstall) { btnInstall.disabled = false; btnInstall.innerHTML = '<i class="fa-solid fa-bolt"></i> Tentar Novamente'; }
+                if (btnDo) { btnDo.disabled = false; }
+            }
+        }, 1500);
+
+    } catch (error) {
+        logToConsole(`[ATUALIZAÇÃO ERRO] ${error.message}`, 'error');
+        if (msgEl) { msgEl.textContent = 'Erro ao iniciar atualização: ' + error.message; msgEl.style.color = 'var(--red)'; }
+        if (btnInstall) { btnInstall.disabled = false; btnInstall.innerHTML = '<i class="fa-solid fa-bolt"></i> Tentar Novamente'; }
+        if (btnDo) { btnDo.disabled = false; }
+    }
+}
+
+/** Manual check from the Updates panel */
 async function checkUpdates() {
-    const msgEl = document.getElementById('update-status-msg');
+    const msgEl          = document.getElementById('update-status-msg');
     const latestVersionEl = document.getElementById('latest-version-text');
-    const btnUpdate = document.getElementById('btn-do-update');
+    const btnUpdate      = document.getElementById('btn-do-update');
     
-    msgEl.textContent = "Verificando servidor de atualizações...";
-    msgEl.style.color = "var(--text-muted)";
+    msgEl.textContent = 'Verificando servidor de atualizações...';
+    msgEl.style.color = 'var(--text-muted)';
     
     try {
-        // Consultar o repositório GitHub para pegar o version.json
-        const timestamp = new Date().getTime();
-        const response = await fetch(`https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main/version.json?t=${timestamp}`, { cache: 'no-store' });
-        
-        if (!response.ok) {
-            throw new Error(`Servidor retornou erro ${response.status}. Certifique-se de que o repositório no GitHub é Público e não Privado.`);
-        }
+        const timestamp = Date.now();
+        const response = await fetch(
+            `https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main/version.json?t=${timestamp}`,
+            { cache: 'no-store' }
+        );
+        if (!response.ok) throw new Error(`Servidor retornou erro ${response.status}. Verifique se o repositório GitHub é Público.`);
         
         const data = await response.json();
-        const latestVersion = data.version; 
-        
-        const currentVersion = "v1.0.8";
-        
+        const latestVersion = data.version;
+        _latestVersionAvailable = latestVersion;
         latestVersionEl.textContent = latestVersion;
         
-        if (latestVersion !== currentVersion) {
-            msgEl.textContent = "Uma nova versão está disponível! Clique em Baixar e Instalar Agora.";
-            msgEl.style.color = "var(--cyan)";
+        if (latestVersion !== CURRENT_VERSION) {
+            msgEl.textContent = '🚀 Nova versão disponível! Clique em Atualizar Automaticamente.';
+            msgEl.style.color = 'var(--cyan)';
             btnUpdate.classList.remove('hidden');
+            // Also show the banner if it was dismissed
+            showUpdateBanner(latestVersion);
         } else {
-            msgEl.textContent = "Você já possui a versão mais recente do WinToolKit.";
-            msgEl.style.color = "var(--emerald)";
+            msgEl.textContent = '✅ Você já possui a versão mais recente do WinToolKit.';
+            msgEl.style.color = 'var(--emerald)';
             btnUpdate.classList.add('hidden');
         }
     } catch (error) {
-        msgEl.textContent = "Erro ao verificar atualizações: " + error.message;
-        msgEl.style.color = "var(--red)";
+        msgEl.textContent = 'Erro ao verificar atualizações: ' + error.message;
+        msgEl.style.color = 'var(--red)';
     }
 }
 

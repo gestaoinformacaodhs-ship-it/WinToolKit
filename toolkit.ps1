@@ -328,27 +328,25 @@ try {
                         Write-Output "Executando procedimentos de reparo de rede..."
                         
                         Write-Output "-> Redefinindo WinSock Catalog..."
-                        netsh winsock reset | Out-String | Write-Output
+                        try { netsh winsock reset | Out-String | Write-Output } catch { Write-Output "[AVISO] winsock reset: $_" }
                         
                         Write-Output "-> Redefinindo pilha TCP/IP..."
-                        netsh int ip reset | Out-String | Write-Output
+                        try { netsh int ip reset | Out-String | Write-Output } catch { Write-Output "[AVISO] ip reset: $_" }
                         
-                        Write-Output "-> Liberando concessões IP..."
-                        ipconfig /release | Out-String | Write-Output
+                        Write-Output "-> Liberando concessoes IP..."
+                        try { ipconfig /release | Out-String | Write-Output } catch { Write-Output "[AVISO] release: $_" }
                         
-                        Write-Output "-> Renovando concessões IP..."
-                        ipconfig /renew | Out-String | Write-Output
+                        Write-Output "-> Renovando concessoes IP..."
+                        try { ipconfig /renew | Out-String | Write-Output } catch { Write-Output "[AVISO] renew: $_" }
                         
                         Write-Output "-> Limpando cache do cliente DNS..."
-                        ipconfig /flushdns | Out-String | Write-Output
-                        try {
-                            Clear-DnsClientCache -ErrorAction SilentlyContinue
-                        } catch {}
+                        try { ipconfig /flushdns | Out-String | Write-Output } catch {}
+                        try { Clear-DnsClientCache -ErrorAction SilentlyContinue } catch {}
                         
                         Write-Output "-> Limpando tabela ARP..."
-                        arp -d *
+                        try { arp -d * } catch {}
                         
-                        Write-Output "[SUCESSO] Reparo e calibração de rede executados com êxito."
+                        Write-Output "[SUCESSO] Reparo e calibracao de rede executados com exito."
                     }
                 }
                 "gpupdate" {
@@ -375,23 +373,93 @@ try {
                     }
                 }
                 "install_update" {
+                    # Legacy fallback - redirect to auto_update
                     $scriptBlock = {
-                        Write-Output "Iniciando download da atualização do WinToolKit..."
-                        $downloadUrl = "https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main/Instalar.exe"
-                        
-                        try {
-                            Write-Output "Baixando nova versão de: $downloadUrl"
-                            Invoke-WebRequest -Uri $downloadUrl -OutFile "$env:TEMP\WinToolKit_Update.exe" -UseBasicParsing -ErrorAction Stop
-                            
-                            Write-Output "Download concluído."
-                            Write-Output "Iniciando instalador da nova versão..."
-                            
-                            Start-Process -FilePath "$env:TEMP\WinToolKit_Update.exe"
-                            
-                            Write-Output "[SUCESSO] Atualização engatilhada. O WinToolKit será fechado."
-                        } catch {
-                            Write-Output "[ERRO] Falha ao baixar ou iniciar a atualização: $_"
+                        Write-Output "[INFO] Redirecionando para atualizacao automatica..."
+                        Write-Output "[SUCESSO] Use o botao 'Atualizar Automaticamente' para atualizar sem abrir o instalador."
+                    }
+                }
+                "auto_update" {
+                    $scriptBlock = {
+                        $repoBase  = "https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main"
+                        $installDir = $PSScriptRoot
+                        $tempDir    = $env:TEMP
+
+                        Write-Output "Iniciando atualizacao automatica do WinToolKit..."
+                        Write-Output "Diretorio de instalacao: $installDir"
+
+                        # Helper to download a file with retry
+                        function Download-File {
+                            param([string]$Url, [string]$Dest, [string]$Label)
+                            Write-Output "Baixando $Label..."
+                            $attempts = 0
+                            do {
+                                $attempts++
+                                try {
+                                    Invoke-WebRequest -Uri $Url -OutFile $Dest -UseBasicParsing -ErrorAction Stop
+                                    Write-Output "  OK: $Label baixado com sucesso."
+                                    return $true
+                                } catch {
+                                    if ($attempts -ge 3) {
+                                        Write-Output "[ERRO] Falha ao baixar $Label apos $attempts tentativas: $_"
+                                        return $false
+                                    }
+                                    Write-Output "  [AVISO] Tentativa $attempts falhou. Tentando novamente..."
+                                    Start-Sleep -Seconds 2
+                                }
+                            } while ($true)
                         }
+
+                        # ---- 1. Download web assets (can be replaced while running) ----
+                        $webFiles = @(
+                            @{ Url = "$repoBase/web/index.html"; Dest = "$installDir\web\index.html"; Label = "index.html" },
+                            @{ Url = "$repoBase/web/style.css";  Dest = "$installDir\web\style.css";  Label = "style.css"  },
+                            @{ Url = "$repoBase/web/app.js";     Dest = "$installDir\web\app.js";     Label = "app.js"     }
+                        )
+                        $allOk = $true
+                        foreach ($f in $webFiles) {
+                            $ok = Download-File -Url $f.Url -Dest $f.Dest -Label $f.Label
+                            if (-not $ok) { $allOk = $false }
+                        }
+
+                        # ---- 2. Download executables to temp ----
+                        $exeOk   = Download-File -Url "$repoBase/WinToolKit.exe" -Dest "$tempDir\WinToolKit_new.exe" -Label "WinToolKit.exe"
+                        $ps1Ok   = Download-File -Url "$repoBase/toolkit.ps1"    -Dest "$tempDir\toolkit_new.ps1"   -Label "toolkit.ps1"
+                        $verOk   = Download-File -Url "$repoBase/version.json"    -Dest "$tempDir\version_new.json"  -Label "version.json"
+
+                        if (-not ($allOk -and $exeOk -and $ps1Ok)) {
+                            Write-Output "[ERRO] Alguns arquivos nao puderam ser baixados. Atualizacao cancelada."
+                            exit 1
+                        }
+
+                        # ---- 3. Create deferred batch to replace locked files & restart ----
+                        $batchContent = @"
+@echo off
+chcp 65001 >nul
+title WinToolKit - Aplicando Atualizacao
+echo [WinToolKit] Aplicando atualizacao, aguarde...
+timeout /t 3 /nobreak >nul
+
+copy /y "$tempDir\WinToolKit_new.exe" "$installDir\WinToolKit.exe" >nul 2>&1
+copy /y "$tempDir\toolkit_new.ps1"   "$installDir\toolkit.ps1"    >nul 2>&1
+copy /y "$tempDir\version_new.json"  "$installDir\version.json"   >nul 2>&1
+
+del "$tempDir\WinToolKit_new.exe" >nul 2>&1
+del "$tempDir\toolkit_new.ps1"   >nul 2>&1
+del "$tempDir\version_new.json"  >nul 2>&1
+
+echo [WinToolKit] Atualizacao aplicada. Reiniciando...
+timeout /t 1 /nobreak >nul
+start "" "$installDir\WinToolKit.exe"
+del "%~f0"
+"@"
+                        $batchPath = "$tempDir\wintoolkit_updater.bat"
+                        Set-Content -Path $batchPath -Value $batchContent -Encoding ASCII -Force
+
+                        Write-Output "Arquivos baixados com sucesso. Agendando reinicio automatico..."
+                        Start-Process "cmd.exe" -ArgumentList "/c `"$batchPath`"" -WindowStyle Hidden
+
+                        Write-Output "[SUCESSO] Atualizacao agendada! O WinToolKit sera reiniciado automaticamente em alguns segundos."
                     }
                 }
             }

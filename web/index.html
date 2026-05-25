@@ -15,6 +15,26 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠️</text></svg>">
 </head>
 <body>
+
+    <!-- ===== AUTO-UPDATE NOTIFICATION BANNER ===== -->
+    <div id="update-banner" class="update-banner hidden">
+        <div class="update-banner-icon">
+            <i class="fa-solid fa-cloud-arrow-down"></i>
+        </div>
+        <div class="update-banner-text">
+            <strong id="update-banner-title">Nova versão disponível!</strong>
+            <span id="update-banner-desc">Uma nova versão do WinToolKit foi encontrada.</span>
+        </div>
+        <div class="update-banner-actions">
+            <button class="btn-banner-update" id="btn-banner-install" onclick="performAutoUpdate()">
+                <i class="fa-solid fa-bolt"></i> Atualizar Agora
+            </button>
+            <button class="btn-banner-dismiss" onclick="dismissUpdateBanner()" title="Ignorar atualização">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
+
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
@@ -23,7 +43,7 @@
                     <i class="fa-solid fa-terminal"></i>
                 </div>
                 <div class="brand-text">
-                    <h1>WinToolKit <span style="color:var(--cyan); font-weight:bold; font-size:11px; vertical-align:middle; margin-left:4px;">v1.0.7</span></h1>
+                    <h1>WinToolKit <span style="color:var(--cyan); font-weight:bold; font-size:11px; vertical-align:middle; margin-left:4px;">v1.0.9</span></h1>
                 </div>
             </div>
             
@@ -356,7 +376,7 @@
                         <div class="info-list" style="margin-top:15px;">
                             <div class="info-row">
                                 <span class="label">Versão Atual:</span>
-                                <span class="value" id="current-version-text" style="font-weight:bold; color:var(--cyan);">v1.0.7</span>
+                                <span class="value" id="current-version-text" style="font-weight:bold; color:var(--cyan);">v1.0.9</span>
                             </div>
                             <div class="info-row">
                                 <span class="label">Última Versão Disponível:</span>
@@ -368,8 +388,8 @@
                             <button class="btn btn-primary" id="btn-check-update" onclick="checkUpdates()">
                                 <i class="fa-solid fa-arrows-rotate"></i> Verificar Atualização
                             </button>
-                            <button class="btn btn-emerald hidden" id="btn-do-update" onclick="runTool('install_update')">
-                                <i class="fa-solid fa-download"></i> Baixar e Instalar Agora
+                            <button class="btn btn-emerald hidden" id="btn-do-update" onclick="performAutoUpdate()">
+                                <i class="fa-solid fa-bolt"></i> Atualizar Automaticamente
                             </button>
                         </div>
                         <p id="update-status-msg" style="margin-top: 15px; font-size: 13px; color: var(--text-muted);"></p>
