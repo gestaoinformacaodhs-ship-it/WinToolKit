@@ -505,13 +505,32 @@ namespace WinToolKit
         private CheckBox chkStartMenu;
         private CheckBox chkRunNow;
 
+        private static void Log(string message)
+        {
+            try
+            {
+                string logPath = Path.Combine(Path.GetTempPath(), "wintoolkit_install.log");
+                File.AppendAllText(logPath, string.Format("[{0}] {1}\r\n", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), message));
+            }
+            catch { }
+        }
+
         [STAThread]
         public static void Main()
         {
-            if (!IsAdministrator()) { ElevateAndExit(); return; }
+            Log("=== INSTALADOR INICIADO ===");
+            Log("IsAdministrator: " + IsAdministrator());
+            if (!IsAdministrator()) 
+            { 
+                Log("Nao e Administrador. Solicitando UAC...");
+                ElevateAndExit(); 
+                return; 
+            }
+            Log("Iniciando Form...");
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new InstallerForm());
+            Log("=== INSTALADOR FINALIZADO ===");
         }
 
         public InstallerForm()
@@ -735,52 +754,87 @@ namespace WinToolKit
 
         private void DoInstall()
         {
+            Log("Thread DoInstall iniciada.");
+            Log("Pasta de destino: " + targetDir);
             try
             {
                 SetProgress(2, "Fechando versoes antigas em execucao...");
+                Log("Fechando versoes antigas...");
                 
                 // 1. Fechar a janela do navegador (Edge/Chrome em modo app)
                 foreach (Process p in Process.GetProcesses())
                 {
                     try {
                         if (!string.IsNullOrEmpty(p.MainWindowTitle) && p.MainWindowTitle.Contains("WinToolKit")) {
+                            Log("Fechando janela do WinToolKit: " + p.MainWindowTitle);
                             p.CloseMainWindow();
                             p.WaitForExit(1000);
                         }
-                    } catch { }
+                    } catch (Exception ex) {
+                        Log("Erro ao fechar janela de processo: " + ex.Message);
+                    }
                 }
 
                 // 2. Matar o processo WinToolKit (Launcher) e seus filhos (backend)
                 try {
+                    Log("Executando taskkill para WinToolKit.exe...");
                     ProcessStartInfo psi = new ProcessStartInfo("taskkill", "/F /T /IM WinToolKit.exe");
                     psi.CreateNoWindow = true;
                     psi.UseShellExecute = false;
-                    Process.Start(psi).WaitForExit(2000);
-                } catch { }
+                    Process proc = Process.Start(psi);
+                    if (proc != null) {
+                        proc.WaitForExit(2000);
+                        Log("Taskkill concluido com codigo: " + proc.ExitCode);
+                    }
+                } catch (Exception ex) {
+                    Log("Erro ao executar taskkill: " + ex.Message);
+                }
 
                 SetProgress(5, "Criando pasta de instalacao...");
-                if (!Directory.Exists(targetDir)) Directory.CreateDirectory(targetDir);
+                Log("Criando pasta: " + targetDir);
+                if (!Directory.Exists(targetDir)) {
+                    Directory.CreateDirectory(targetDir);
+                    Log("Pasta de destino criada.");
+                } else {
+                    Log("Pasta de destino ja existe.");
+                }
 
                 string webDir = Path.Combine(targetDir, "web");
-                if (!Directory.Exists(webDir)) Directory.CreateDirectory(webDir);
+                Log("Criando pasta web: " + webDir);
+                if (!Directory.Exists(webDir)) {
+                    Directory.CreateDirectory(webDir);
+                    Log("Pasta web criada.");
+                }
 
                 SetProgress(20, "Extraindo WinToolKit.exe...");
+                Log("Extraindo WinToolKit.exe...");
                 File.WriteAllBytes(Path.Combine(targetDir, "WinToolKit.exe"), Convert.FromBase64String(B64_LAUNCHER));
+                Log("WinToolKit.exe extraido com sucesso.");
 
                 SetProgress(40, "Extraindo toolkit.ps1...");
+                Log("Extraindo toolkit.ps1...");
                 File.WriteAllBytes(Path.Combine(targetDir, "toolkit.ps1"), Convert.FromBase64String(B64_TOOLKIT));
+                Log("toolkit.ps1 extraido com sucesso.");
 
                 SetProgress(55, "Extraindo interface Web — index.html...");
+                Log("Extraindo index.html...");
                 File.WriteAllBytes(Path.Combine(webDir, "index.html"), Convert.FromBase64String(B64_HTML));
+                Log("index.html extraido.");
 
                 SetProgress(68, "Extraindo interface Web — style.css...");
+                Log("Extraindo style.css...");
                 File.WriteAllBytes(Path.Combine(webDir, "style.css"), Convert.FromBase64String(B64_CSS));
+                Log("style.css extraido.");
 
                 SetProgress(80, "Extraindo interface Web — app.js...");
+                Log("Extraindo app.js...");
                 File.WriteAllBytes(Path.Combine(webDir, "app.js"), Convert.FromBase64String(B64_JS));
+                Log("app.js extraido.");
 
                 SetProgress(88, "Extraindo Desinstalar.exe...");
+                Log("Extraindo Desinstalar.exe...");
                 File.WriteAllBytes(Path.Combine(targetDir, "Desinstalar.exe"), Convert.FromBase64String(B64_UNINSTALLER));
+                Log("Desinstalar.exe extraido.");
 
                 SetProgress(92, "Finalizando extraindo...");
                 Thread.Sleep(300);
@@ -788,24 +842,46 @@ namespace WinToolKit
                 SetProgress(100, "Instalacao concluida!");
                 Thread.Sleep(400);
 
-                this.Invoke((MethodInvoker)(() => ShowFinish()));
+                Log("Chamando ShowFinish na thread UI...");
+                this.Invoke((MethodInvoker)(() => {
+                    Log("ShowFinish sendo executado.");
+                    ShowFinish();
+                }));
             }
             catch (Exception ex)
             {
-                this.Invoke((MethodInvoker)(() => {
+                Log("ERRO CRITICO DOINSTALL: " + ex.ToString());
+                if (!this.IsDisposed && this.IsHandleCreated)
+                {
+                    try {
+                        this.Invoke((MethodInvoker)(() => {
+                            MessageBox.Show(string.Format("Erro na instalacao:\n{0}", ex.Message), "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            ShowPath();
+                        }));
+                    } catch (Exception invEx) {
+                        Log("Erro ao invocar dialog de erro: " + invEx.Message);
+                        MessageBox.Show(string.Format("Erro na instalacao:\n{0}", ex.Message), "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                } else {
                     MessageBox.Show(string.Format("Erro na instalacao:\n{0}", ex.Message), "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    ShowPath();
-                }));
+                }
             }
         }
 
         private void SetProgress(int val, string msg)
         {
             if (this.IsDisposed) return;
-            this.Invoke((MethodInvoker)(() => {
-                progressBar.Value = val;
-                progressStatus.Text = msg;
-            }));
+            try
+            {
+                this.Invoke((MethodInvoker)(() => {
+                    progressBar.Value = val;
+                    progressStatus.Text = msg;
+                }));
+            }
+            catch (Exception ex)
+            {
+                Log("Erro em SetProgress (" + val + ", " + msg + "): " + ex.Message);
+            }
         }
 
         // ===== STEP 4: FINISH =====
@@ -835,18 +911,21 @@ namespace WinToolKit
 
         private void OnFinish(object sender, EventArgs e)
         {
+            Log("OnFinish iniciado.");
             try
             {
                 string targetExe = Path.Combine(targetDir, "WinToolKit.exe");
 
                 if (chkDesktop.Checked)
                 {
+                    Log("Criando atalho na Area de Trabalho.");
                     string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
                     CreateShortcut(Path.Combine(desktop, "WinToolKit.lnk"), targetExe, targetDir);
                 }
 
                 if (chkStartMenu.Checked)
                 {
+                    Log("Criando atalhos no Menu Iniciar.");
                     string sm = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms), "WinToolKit");
                     if (!Directory.Exists(sm)) Directory.CreateDirectory(sm);
                     CreateShortcut(Path.Combine(sm, "WinToolKit.lnk"), targetExe, targetDir);
@@ -854,6 +933,7 @@ namespace WinToolKit
                 }
 
                 try {
+                    Log("Registrando no Painel de Controle...");
                     using (RegistryKey key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\WinToolKit"))
                     {
                         key.SetValue("DisplayName", "WinToolKit");
@@ -863,21 +943,28 @@ namespace WinToolKit
                         key.SetValue("Publisher", "Suporte TI");
                         key.SetValue("InstallLocation", targetDir);
                     }
-                } catch { }
+                    Log("Registro concluido.");
+                } catch (Exception exReg) { 
+                    Log("Erro ao registrar Uninstall: " + exReg.Message);
+                }
 
                 if (chkRunNow.Checked)
                 {
+                    Log("Executando WinToolKit agora...");
                     ProcessStartInfo psi = new ProcessStartInfo();
                     psi.FileName = targetExe;
                     psi.WorkingDirectory = targetDir;
                     psi.UseShellExecute = true;
                     Process.Start(psi);
+                    Log("Execucao iniciada.");
                 }
             }
             catch (Exception ex)
             {
+                Log("ERRO EM ONFINISH: " + ex.ToString());
                 MessageBox.Show(string.Format("Aviso ao criar atalhos:\n{0}", ex.Message), "WinToolKit", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
+            Log("Fechando form.");
             this.Close();
         }
 
