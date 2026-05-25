@@ -15,6 +15,52 @@ if (-not (Test-Path $csc)) {
 
 $base = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+# ---- STEP -1: Certificate Generation & Executable Signing Routine ----
+function Sign-Executable {
+    param (
+        [string]$filePath
+    )
+    Write-Host "Assinando digitalmente: $filePath..." -ForegroundColor Yellow
+    
+    # 1. Localizar ou criar o certificado autoassinado
+    $certSubject = "CN=DHS Suporte Tecnico"
+    $cert = Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Subject -like "*$certSubject*" } | Select-Object -First 1
+    
+    if (-not $cert) {
+        Write-Host "Criando novo certificado digital autoassinado em CurrentUser\My..." -ForegroundColor Yellow
+        $cert = New-SelfSignedCertificate -Type CodeSigning -Subject $certSubject -CertStoreLocation Cert:\CurrentUser\My -NotAfter (Get-Date).AddYears(5)
+        Write-Host "Certificado criado com sucesso! Impressao digital: $($cert.Thumbprint)" -ForegroundColor Green
+    } else {
+        Write-Host "Certificado existente localizado! Impressao digital: $($cert.Thumbprint)" -ForegroundColor Gray
+    }
+    
+    # 2. Exportar o certificado público (.cer) para distribuição se ainda não exportado
+    $cerPath = Join-Path $base "wintoolkit.cer"
+    if (-not (Test-Path $cerPath)) {
+        Write-Host "Exportando certificado publico para $cerPath..." -ForegroundColor Yellow
+        $bytes = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert)
+        [System.IO.File]::WriteAllBytes($cerPath, $bytes)
+        Write-Host "Certificado publico exportado com sucesso!" -ForegroundColor Green
+    }
+    
+    # 3. Assinar o executável
+    try {
+        # Tenta assinar com carimbo de data/hora (timestamp)
+        Set-AuthenticodeSignature -FilePath $filePath -Certificate $cert -TimestampServer "http://timestamp.digicert.com" -ErrorAction Stop | Out-Null
+        Write-Host "  [OK] Assinado com sucesso (com Timestamp)!" -ForegroundColor Green
+    }
+    catch {
+        Write-Warning "Falha ao assinar com timestamp: $_. Tentando assinar sem timestamp..."
+        try {
+            Set-AuthenticodeSignature -FilePath $filePath -Certificate $cert -ErrorAction Stop | Out-Null
+            Write-Host "  [OK] Assinado com sucesso (sem Timestamp)!" -ForegroundColor Green
+        }
+        catch {
+            Write-Error "Falha critica ao aplicar assinatura digital em ${filePath}. Erro: $_"
+        }
+    }
+}
+
 # ---- STEP 0: Generate app.ico from logo.png ----
 $pngPath = Join-Path $base "logo.png"
 $icoPath = Join-Path $base "app.ico"
@@ -328,6 +374,9 @@ if ($result.ExitCode -ne 0 -or -not (Test-Path $launcherOut)) {
 }
 Write-Host "  [OK] WinToolKit.exe compilado!" -ForegroundColor Green
 
+# Assinar digitalmente o Launcher
+Sign-Executable -filePath $launcherOut
+
 # ---- STEP 1.5: Compile Desinstalar.exe ----
 Write-Host "[1.5/4] Compilando Desinstalar.exe..." -ForegroundColor Yellow
 $uninstallSrc = Join-Path $base "src\Uninstall.cs"
@@ -385,6 +434,9 @@ if ($resU.ExitCode -ne 0 -or -not (Test-Path $uninstallOut)) {
     exit 1
 }
 Write-Host "  [OK] Desinstalar.exe compilado!" -ForegroundColor Green
+
+# Assinar digitalmente o Desinstalador
+Sign-Executable -filePath $uninstallOut
 
 # ---- STEP 2: Read all files and encode as Base64 ----
 Write-Host "[2/4] Lendo e codificando todos os arquivos..." -ForegroundColor Yellow
@@ -947,6 +999,9 @@ if ($result2.ExitCode -ne 0 -or -not (Test-Path $installerOut)) {
     Write-Host $instErr -ForegroundColor Red
     exit 1
 }
+
+# Assinar digitalmente o Instalador Auto-Contido final
+Sign-Executable -filePath $installerOut
 
 $sizeMB = [Math]::Round((Get-Item $installerOut).Length / 1MB, 2)
 Write-Host "  [OK] Instalar.exe gerado com sucesso!" -ForegroundColor Green
