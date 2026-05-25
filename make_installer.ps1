@@ -762,10 +762,11 @@ namespace WinToolKit
                 Log("Fechando versoes antigas...");
                 
                 // 1. Fechar a janela do navegador (Edge/Chrome em modo app)
+                int currentPid = Process.GetCurrentProcess().Id;
                 foreach (Process p in Process.GetProcesses())
                 {
                     try {
-                        if (!string.IsNullOrEmpty(p.MainWindowTitle) && p.MainWindowTitle.Contains("WinToolKit")) {
+                        if (p.Id != currentPid && !string.IsNullOrEmpty(p.MainWindowTitle) && p.MainWindowTitle.Contains("WinToolKit")) {
                             Log("Fechando janela do WinToolKit: " + p.MainWindowTitle);
                             p.CloseMainWindow();
                             p.WaitForExit(1000);
