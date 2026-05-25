@@ -16,7 +16,7 @@ if (-not (Test-Path $csc)) {
 $base = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # ---- STEP -1: Certificate Generation & Executable Signing Routine ----
-function Sign-Executable {
+function Set-ExecutableSignature {
     param (
         [string]$filePath
     )
@@ -375,7 +375,7 @@ if ($result.ExitCode -ne 0 -or -not (Test-Path $launcherOut)) {
 Write-Host "  [OK] WinToolKit.exe compilado!" -ForegroundColor Green
 
 # Assinar digitalmente o Launcher
-Sign-Executable -filePath $launcherOut
+Set-ExecutableSignature -filePath $launcherOut
 
 # ---- STEP 1.5: Compile Desinstalar.exe ----
 Write-Host "[1.5/4] Compilando Desinstalar.exe..." -ForegroundColor Yellow
@@ -436,7 +436,7 @@ if ($resU.ExitCode -ne 0 -or -not (Test-Path $uninstallOut)) {
 Write-Host "  [OK] Desinstalar.exe compilado!" -ForegroundColor Green
 
 # Assinar digitalmente o Desinstalador
-Sign-Executable -filePath $uninstallOut
+Set-ExecutableSignature -filePath $uninstallOut
 
 # ---- STEP 2: Read all files and encode as Base64 ----
 Write-Host "[2/4] Lendo e codificando todos os arquivos..." -ForegroundColor Yellow
@@ -1135,7 +1135,7 @@ if ($result2.ExitCode -ne 0 -or -not (Test-Path $installerOut)) {
 }
 
 # Assinar digitalmente o Instalador Auto-Contido final
-Sign-Executable -filePath $installerOut
+Set-ExecutableSignature -filePath $installerOut
 
 $sizeMB = [Math]::Round((Get-Item $installerOut).Length / 1MB, 2)
 Write-Host "  [OK] Instalar.exe gerado com sucesso!" -ForegroundColor Green
