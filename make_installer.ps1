@@ -515,10 +515,14 @@ namespace WinToolKit
             catch { }
         }
 
+        public static bool IsSilentUpdate = false;
+
         [STAThread]
         public static void Main()
         {
             Log("=== INSTALADOR INICIADO ===");
+            IsSilentUpdate = Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().Location).Equals("WinToolKit_Update", StringComparison.OrdinalIgnoreCase);
+            
             Log("IsAdministrator: " + IsAdministrator());
             if (!IsAdministrator()) 
             { 
@@ -529,7 +533,18 @@ namespace WinToolKit
             Log("Iniciando Form...");
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new InstallerForm());
+            
+            InstallerForm form = new InstallerForm();
+            if (IsSilentUpdate) {
+                form.Opacity = 0;
+                form.ShowInTaskbar = false;
+                form.Load += (s, e) => {
+                    form.Hide();
+                    // Start install directly
+                    form.ShowInstalling();
+                };
+            }
+            Application.Run(form);
             Log("=== INSTALADOR FINALIZADO ===");
         }
 
@@ -728,7 +743,7 @@ namespace WinToolKit
         }
 
         // ===== STEP 3: INSTALLING =====
-        private void ShowInstalling()
+        public void ShowInstalling()
         {
             contentPanel.Controls.Clear();
             currentStep = 3;
@@ -888,6 +903,15 @@ namespace WinToolKit
         // ===== STEP 4: FINISH =====
         private void ShowFinish()
         {
+            if (IsSilentUpdate) {
+                // Auto-finish without showing the screen
+                chkDesktop = new CheckBox() { Checked = false };
+                chkStartMenu = new CheckBox() { Checked = false };
+                chkRunNow = new CheckBox() { Checked = true };
+                OnFinish(null, null);
+                return;
+            }
+
             contentPanel.Controls.Clear();
             currentStep = 4;
             UpdateStepIndicators();
