@@ -196,12 +196,17 @@ function startJobPolling(jobId, actionName) {
     if (activePollingJobs.has(jobId)) return;
     
     let lastLogIndex = 0;
+    let consecutiveFailures = 0;
+    const MAX_RETRIES = 25; // 25 retries * 1.2s delay = ~30 seconds network buffer
     
     async function poll() {
         try {
             const response = await fetch(`${API_BASE}/api/job-status?jobId=${jobId}&lastIndex=${lastLogIndex}`);
             if (!response.ok) throw new Error('Perda de contato com o monitor do Job');
             const data = await response.json();
+            
+            // Reset failure counter on success
+            consecutiveFailures = 0;
             
             // Print new logs
             if (data.newLogs && data.newLogs.length > 0) {
@@ -232,8 +237,19 @@ function startJobPolling(jobId, actionName) {
                 activePollingJobs.set(jobId, timeoutId);
             }
         } catch (error) {
-            activePollingJobs.delete(jobId);
-            logToConsole(`[MONITOR] Erro ao obter atualizações do processo: ${error.message}`, 'error');
+            consecutiveFailures++;
+            if (consecutiveFailures < MAX_RETRIES) {
+                // Alert once when network reset cuts local connection
+                if (consecutiveFailures === 1) {
+                    logToConsole(`[MONITOR] Conexão com o servidor local interrompida temporariamente (Reparo de Rede ativo). Tentando reconectar...`, 'line-warning');
+                }
+                // Try again with a larger delay to wait for network stack renewal
+                const timeoutId = setTimeout(poll, 1200);
+                activePollingJobs.set(jobId, timeoutId);
+            } else {
+                activePollingJobs.delete(jobId);
+                logToConsole(`[MONITOR] Erro definitivo ao obter atualizações do processo: ${error.message} (Sem resposta do servidor após várias tentativas)`, 'error');
+            }
         }
     }
     
@@ -403,7 +419,7 @@ async function checkUpdates() {
         const data = await response.json();
         const latestVersion = data.version; 
         
-        const currentVersion = "v1.0.7";
+        const currentVersion = "v1.0.8";
         
         latestVersionEl.textContent = latestVersion;
         
