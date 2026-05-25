@@ -122,8 +122,9 @@ try {
             
             if ($requestToken -ne $Token -and $cookieToken -ne $Token) {
                 $context.Response.StatusCode = 403
-                $context.Response.ContentType = "text/plain; charset=utf-8"
-                $bytes = [System.Text.Encoding]::UTF8.GetBytes("Acesso nao autorizado (403 Forbidden).")
+                $context.Response.ContentType = "text/html; charset=utf-8"
+                $html = "<html><head><script>window.close();</script></head><body style='background:#0b0f19;color:#ef4444;font-family:sans-serif;padding:20px;'>Acesso nao autorizado (403 Forbidden).<br><br><small>Esta janela expirou e deve ser fechada automaticamente.</small></body></html>"
+                $bytes = [System.Text.Encoding]::UTF8.GetBytes($html)
                 $context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
                 $context.Response.Close()
                 continue

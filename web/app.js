@@ -475,10 +475,7 @@ async function performAutoUpdate() {
     if (bannerDesc) bannerDesc.textContent = 'Baixando atualização em segundo plano...';
     if (msgEl) { msgEl.textContent = 'Baixando atualização automática...'; msgEl.style.color = 'var(--cyan)'; }
 
-    // Navigate to console to show progress
-    const navConsole = document.getElementById('nav-console');
-    if (navConsole) navConsole.click();
-
+    // Stay on current page, just log in background
     logToConsole('[ATUALIZAÇÃO] Iniciando atualização automática do WinToolKit...', 'command');
 
     try {
