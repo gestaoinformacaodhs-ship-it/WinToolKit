@@ -289,6 +289,21 @@ try {
             
             Send-JsonResponse $context @{ success = $success; message = $message }
             
+        } elseif ($url.StartsWith("/api/check-update") -and $method -eq "GET") {
+            try {
+                [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+                $timestamp = [Math]::Floor([decimal](Get-Date (Get-Date).ToUniversalTime() -UFormat "%s") * 1000)
+                $updateUrl = "https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main/version.json?t=$timestamp"
+                $response = Invoke-WebRequest -Uri $updateUrl -UseBasicParsing -ErrorAction Stop
+                $jsonStr = $response.Content
+                
+                # Send raw string out as json object (or parse and re-send to ensure validation)
+                $jsonObj = $jsonStr | ConvertFrom-Json
+                Send-JsonResponse $context $jsonObj
+            } catch {
+                Send-JsonResponse $context @{ error = $true; message = $_.Exception.Message }
+            }
+            
         } elseif ($url.StartsWith("/api/action") -and $method -eq "POST") {
             $reader = New-Object System.IO.StreamReader($request.InputStream, [System.Text.Encoding]::UTF8)
             $body = $reader.ReadToEnd()

@@ -2,7 +2,7 @@
 const API_BASE = ''; // Same host as the dashboard
 const DIAGNOSTICS_POLL_INTERVAL = 3000; // 3 seconds
 const CIRCUMFERENCE = 2 * Math.PI * 70; // 439.822
-const CURRENT_VERSION = 'v1.0.16';
+const CURRENT_VERSION = 'v1.0.17';
 
 let diagnosticsTimer = null;
 let activePollingJobs = new Map(); // jobId -> intervalId
@@ -409,13 +409,10 @@ function copyConsoleLogs() {
 /** Silent startup check - shows notification banner if update available */
 async function checkUpdatesOnStartup() {
     try {
-        const timestamp = Date.now();
-        const response = await fetch(
-            `https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main/version.json?t=${timestamp}`,
-            { cache: 'no-store' }
-        );
+        const response = await fetch(`${API_BASE}/api/check-update`, { cache: 'no-store' });
         if (!response.ok) return;
         const data = await response.json();
+        if (data.error) return;
         const latestVersion = data.version;
         if (latestVersion && latestVersion !== CURRENT_VERSION) {
             _latestVersionAvailable = latestVersion;
@@ -564,14 +561,12 @@ async function checkUpdates() {
     msgEl.style.color = 'var(--text-muted)';
     
     try {
-        const timestamp = Date.now();
-        const response = await fetch(
-            `https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main/version.json?t=${timestamp}`,
-            { cache: 'no-store' }
-        );
-        if (!response.ok) throw new Error(`Servidor retornou erro ${response.status}. Verifique se o repositório GitHub é Público.`);
+        const response = await fetch(`${API_BASE}/api/check-update`, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`Servidor retornou erro ${response.status}.`);
         
         const data = await response.json();
+        if (data.error) throw new Error(data.message);
+        
         const latestVersion = data.version;
         _latestVersionAvailable = latestVersion;
         latestVersionEl.textContent = latestVersion;
