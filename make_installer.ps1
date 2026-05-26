@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # WinToolKit - Make Self-Contained Installer
 # Generates Instalar.exe with ALL files embedded inside
 # ============================================================
@@ -791,6 +791,12 @@ namespace WinToolKit
 
                 // 2. Matar o processo WinToolKit (Launcher) e seus filhos (backend)
                 try {
+                    Log("Finalizando servidor antigo...");
+                    ProcessStartInfo kPsi = new ProcessStartInfo("powershell", "-NoProfile -Command \"Get-WmiObject Win32_Process | Where-Object { $_.Name -eq 'powershell.exe' -and $_.CommandLine -match 'toolkit.ps1' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }\"");
+                    kPsi.CreateNoWindow = true;
+                    kPsi.UseShellExecute = false;
+                    Process.Start(kPsi).WaitForExit();
+                    
                     Log("Finalizando WinToolKit.exe via C#...");
                     foreach (Process proc in Process.GetProcessesByName("WinToolKit")) {
                         if (proc.Id != currentPid) {

@@ -2,7 +2,7 @@
 const API_BASE = ''; // Same host as the dashboard
 const DIAGNOSTICS_POLL_INTERVAL = 3000; // 3 seconds
 const CIRCUMFERENCE = 2 * Math.PI * 70; // 439.822
-const CURRENT_VERSION = 'v1.0.18';
+const CURRENT_VERSION = 'v1.0.19';
 
 let diagnosticsTimer = null;
 let activePollingJobs = new Map(); // jobId -> intervalId
