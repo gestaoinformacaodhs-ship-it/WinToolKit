@@ -295,7 +295,7 @@ try {
                 $timestamp = [Math]::Floor([decimal](Get-Date (Get-Date).ToUniversalTime() -UFormat "%s") * 1000)
                 $updateUrl = "https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main/version.json?t=$timestamp"
                 $response = Invoke-WebRequest -Uri $updateUrl -UseBasicParsing -ErrorAction Stop
-                $jsonStr = $response.Content
+                $jsonStr = $response.Content.Trim([char]0xFEFF).Trim('?')
                 
                 # Send raw string out as json object (or parse and re-send to ensure validation)
                 $jsonObj = $jsonStr | ConvertFrom-Json
