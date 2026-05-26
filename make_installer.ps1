@@ -981,12 +981,18 @@ namespace WinToolKit
                     Log("Registrando no Painel de Controle...");
                     using (RegistryKey key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\WinToolKit"))
                     {
-                        key.SetValue("DisplayName", "WinToolKit");
-                        key.SetValue("DisplayIcon", targetExe);
+                        key.SetValue("DisplayName", "WinToolKit - Suporte TI");
+                        key.SetValue("DisplayIcon", targetExe + ",0");
                         key.SetValue("UninstallString", Path.Combine(targetDir, "Desinstalar.exe"));
-                        key.SetValue("DisplayVersion", "1.0.0");
-                        key.SetValue("Publisher", "Suporte TI");
+                        key.SetValue("DisplayVersion", "1.0.15");
+                        key.SetValue("Publisher", "DHS Suporte TI");
                         key.SetValue("InstallLocation", targetDir);
+                        key.SetValue("URLInfoAbout", "https://github.com/gestaoinformacaodhs-ship-it/WinToolKit");
+                        key.SetValue("HelpLink",     "https://github.com/gestaoinformacaodhs-ship-it/WinToolKit");
+                        key.SetValue("Comments",     "Painel de gerenciamento e suporte tecnico para ambientes Windows corporativos.");
+                        key.SetValue("NoModify",  1, Microsoft.Win32.RegistryValueKind.DWord);
+                        key.SetValue("NoRepair",  1, Microsoft.Win32.RegistryValueKind.DWord);
+                        key.SetValue("EstimatedSize", 2048, Microsoft.Win32.RegistryValueKind.DWord);
                     }
                     Log("Registro concluido.");
                 } catch (Exception exReg) { 
