@@ -16,24 +16,6 @@
 </head>
 <body>
 
-    <!-- ===== AUTO-UPDATE NOTIFICATION BANNER ===== -->
-    <div id="update-banner" class="update-banner hidden">
-        <div class="update-banner-icon">
-            <i class="fa-solid fa-cloud-arrow-down"></i>
-        </div>
-        <div class="update-banner-text">
-            <strong id="update-banner-title">Nova versão disponível!</strong>
-            <span id="update-banner-desc">Uma nova versão do WinToolKit foi encontrada.</span>
-        </div>
-        <div class="update-banner-actions">
-            <button class="btn-banner-update" id="btn-banner-install" onclick="performAutoUpdate()">
-                <i class="fa-solid fa-bolt"></i> Atualizar Agora
-            </button>
-            <button class="btn-banner-dismiss" onclick="dismissUpdateBanner()" title="Ignorar atualização">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-    </div>
 
     <div class="app-container">
         <!-- Sidebar Navigation -->
@@ -43,29 +25,29 @@
                     <i class="fa-solid fa-terminal"></i>
                 </div>
                 <div class="brand-text">
-                    <h1>WinToolKit <span style="color:var(--cyan); font-weight:bold; font-size:11px; vertical-align:middle; margin-left:4px;">v1.0.11</span></h1>
+                    <h1>WinToolKit <span class="brand-version">v1.0.12</span></h1>
                 </div>
             </div>
             
             <nav class="sidebar-nav">
-                <a style="cursor:pointer;" class="nav-item active" id="nav-dashboard">
+                <a class="nav-item active" id="nav-dashboard">
                     <i class="fa-solid fa-gauge-high"></i>
                     <span>Painel Geral</span>
                 </a>
-                <a style="cursor:pointer;" class="nav-item" id="nav-cleanup">
+                <a class="nav-item" id="nav-cleanup">
                     <i class="fa-solid fa-broom-wide"></i>
                     <i class="fa-solid fa-wind"></i>
                     <span>Limpeza & Reparos</span>
                 </a>
-                <a style="cursor:pointer;" class="nav-item" id="nav-services">
+                <a class="nav-item" id="nav-services">
                     <i class="fa-solid fa-gears"></i>
                     <span>Serviços do Sistema</span>
                 </a>
-                <a style="cursor:pointer;" class="nav-item" id="nav-console">
+                <a class="nav-item" id="nav-console">
                     <i class="fa-solid fa-rectangle-list"></i>
                     <span>Console em Tempo Real</span>
                 </a>
-                <a style="cursor:pointer;" class="nav-item" id="nav-updates">
+                <a class="nav-item" id="nav-updates">
                     <i class="fa-solid fa-cloud-arrow-down"></i>
                     <span>Atualizações</span>
                 </a>
@@ -79,7 +61,7 @@
                 <div class="session-info">
                     <span id="session-port">Porta: 4040</span>
                 </div>
-                <div style="text-align: center; margin-top: 15px; font-size: 10px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+                <div class="sidebar-powered-text">
                     Powered by Antigravity
                 </div>
             </div>
@@ -376,12 +358,12 @@
                         <p>Verifique se há novas versões do WinToolKit disponíveis no servidor e atualize automaticamente.</p>
                     </div>
 
-                    <div class="details-panel" style="max-width: 600px;">
+                    <div class="details-panel panel-max-600">
                         <h4>Status da Versão</h4>
-                        <div class="info-list" style="margin-top:15px;">
+                        <div class="info-list mt-15">
                             <div class="info-row">
                                 <span class="label">Versão Atual:</span>
-                                <span class="value" id="current-version-text" style="font-weight:bold; color:var(--cyan);">v1.0.11</span>
+                                <span class="value text-bold-cyan" id="current-version-text">v1.0.12</span>
                             </div>
                             <div class="info-row">
                                 <span class="label">Última Versão Disponível:</span>
@@ -389,7 +371,7 @@
                             </div>
                         </div>
 
-                        <div style="margin-top: 25px; display: flex; gap: 10px;">
+                        <div class="updates-action-group">
                             <button class="btn btn-primary" id="btn-check-update" onclick="checkUpdates()">
                                 <i class="fa-solid fa-arrows-rotate"></i> Verificar Atualização
                             </button>
@@ -397,7 +379,7 @@
                                 <i class="fa-solid fa-bolt"></i> Atualizar Automaticamente
                             </button>
                         </div>
-                        <p id="update-status-msg" style="margin-top: 15px; font-size: 13px; color: var(--text-muted);"></p>
+                        <p id="update-status-msg"></p>
                     </div>
                 </section>
                 

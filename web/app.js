@@ -2,7 +2,7 @@
 const API_BASE = ''; // Same host as the dashboard
 const DIAGNOSTICS_POLL_INTERVAL = 3000; // 3 seconds
 const CIRCUMFERENCE = 2 * Math.PI * 70; // 439.822
-const CURRENT_VERSION = 'v1.0.11';
+const CURRENT_VERSION = 'v1.0.12';
 
 let diagnosticsTimer = null;
 let activePollingJobs = new Map(); // jobId -> intervalId
@@ -425,39 +425,39 @@ async function checkUpdatesOnStartup() {
     }
 }
 
-/** Show the floating update notification banner */
+/** Show the floating update notification pill */
 function showUpdateBanner(latestVersion) {
-    const banner = document.getElementById('update-banner');
-    const title  = document.getElementById('update-banner-title');
-    const desc   = document.getElementById('update-banner-desc');
-    if (!banner) return;
-    title.textContent = `Nova versão disponível: ${latestVersion}`;
-    desc.textContent  = `Você está na ${CURRENT_VERSION}. Clique para atualizar automaticamente, sem abrir nenhum instalador.`;
-    banner.classList.remove('hidden', 'hiding');
+    const updatePill = document.getElementById('update-pill');
+    const updateText = updatePill ? updatePill.querySelector('.update-text') : null;
+    const spinner = updatePill ? updatePill.querySelector('.update-spinner') : null;
+    if (!updatePill) return;
+
+    updatePill.classList.remove('hidden');
+    updatePill.classList.add('ready');
+    if (spinner) spinner.innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i>';
+    if (updateText) updateText.textContent = `Nova versão: ${latestVersion}`;
+    
+    updatePill.onclick = () => {
+        performAutoUpdate();
+    };
 }
 
 /** Dismiss the banner with a slide-out animation */
 function dismissUpdateBanner() {
-    const banner = document.getElementById('update-banner');
-    if (!banner) return;
-    banner.classList.add('hiding');
-    setTimeout(() => banner.classList.add('hidden'), 380);
+    const updatePill = document.getElementById('update-pill');
+    if (!updatePill) return;
+    updatePill.classList.add('hidden');
 }
 
 /** Perform silent / automatic update */
 async function performAutoUpdate() {
-    const btnInstall = document.getElementById('btn-banner-install');
-    const btnDo      = document.getElementById('btn-do-update');
     const msgEl      = document.getElementById('update-status-msg');
-    const banner     = document.getElementById('update-banner');
-    const bannerDesc = document.getElementById('update-banner-desc');
     const updatePill = document.getElementById('update-pill');
     const updateText = updatePill ? updatePill.querySelector('.update-text') : null;
 
     if (btnInstall) { btnInstall.disabled = true; btnInstall.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Baixando...'; }
     if (btnDo)      { btnDo.disabled = true; }
 
-    if (bannerDesc) bannerDesc.textContent = 'Baixando atualização em segundo plano...';
     if (msgEl) { msgEl.textContent = 'Baixando atualização automática...'; msgEl.style.color = 'var(--cyan)'; }
 
     // Antigravity style update UI
@@ -465,7 +465,9 @@ async function performAutoUpdate() {
         updatePill.classList.remove('hidden');
         updatePill.classList.remove('ready');
         updatePill.onclick = null;
-        if (updateText) updateText.textContent = 'Downloading Update';
+        const spinner = updatePill.querySelector('.update-spinner');
+        if (spinner) spinner.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+        if (updateText) updateText.textContent = 'Downloading Update...';
     }
 
     logToConsole('[ATUALIZAÇÃO] Iniciando download da atualização...', 'command');
@@ -499,15 +501,27 @@ async function performAutoUpdate() {
 
                 if (statusData.status === 'completed') {
                     clearInterval(pollInterval);
-                    clearInterval(progressInterval);
                     const bar = document.getElementById('update-progress-bar');
                     if (bar) bar.style.width = '100%';
                     logToConsole('[ATUALIZAÇÃO] Atualização concluída! O WinToolKit será reiniciado automaticamente.', 'success');
-                    if (bannerDesc) bannerDesc.textContent = '✅ Atualização aplicada! Reiniciando...';
                     if (msgEl) { msgEl.textContent = '✅ Atualização aplicada com sucesso! O WinToolKit será reiniciado.'; msgEl.style.color = 'var(--emerald)'; }
-                    // Hide update buttons
+                    
+                    if (updatePill) {
+                        updatePill.classList.add('ready');
+                        const spinner = updatePill.querySelector('.update-spinner');
+                        if (spinner) spinner.innerHTML = '<i class="fa-solid fa-rotate-right"></i>';
+                        if (updateText) updateText.textContent = 'Reiniciar Agora';
+                        updatePill.onclick = () => {
+                            fetch(`${API_BASE}/api/action`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: 'apply_update' })
+                            });
+                        };
+                    }
+                    
                     if (btnDo) btnDo.classList.add('hidden');
-                    setTimeout(() => dismissUpdateBanner(), 3500);
+                    setTimeout(() => dismissUpdateBanner(), 5000);
                 } else if (statusData.status === 'failed') {
                     clearInterval(pollInterval);
                     clearInterval(progressInterval);

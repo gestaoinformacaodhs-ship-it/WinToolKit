@@ -474,7 +474,7 @@ try {
                 $global:ActiveJobs[$jobId] = $job
                 Send-JsonResponse $context @{ success = $true; jobId = $jobId }
             } else {
-                Send-JsonResponse $context @{ success = $false; message = "Ação desconhecida." }
+                Send-JsonResponse $context @{ success = $false; message = "Acao desconhecida." }
             }
             
         } elseif ($url.StartsWith("/api/job-status") -and $method -eq "GET") {
