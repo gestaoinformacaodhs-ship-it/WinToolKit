@@ -81,9 +81,10 @@ function Send-JsonResponse($context, $obj) {
     
     $context.Response.ContentType = "application/json; charset=utf-8"
     $context.Response.ContentLength64 = $bytes.Length
-    # Add CORS headers for developer local testing if needed
-    $context.Response.Headers.Add("Access-Control-Allow-Origin", "*")
-    $context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type")
+    
+    $context.Response.Headers.Add("X-Content-Type-Options", "nosniff")
+    $context.Response.Headers.Add("X-Frame-Options", "DENY")
+    $context.Response.Headers.Add("Content-Security-Policy", "default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com")
     
     $context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
     $context.Response.Close()
@@ -94,6 +95,11 @@ function Send-HtmlResponse($context, $filePath, $mimeType) {
         $bytes = [System.IO.File]::ReadAllBytes($filePath)
         $context.Response.ContentType = $mimeType
         $context.Response.ContentLength64 = $bytes.Length
+        
+        $context.Response.Headers.Add("X-Content-Type-Options", "nosniff")
+        $context.Response.Headers.Add("X-Frame-Options", "DENY")
+        $context.Response.Headers.Add("Content-Security-Policy", "default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com")
+        
         $context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
     } catch {
         $context.Response.StatusCode = 500
@@ -525,6 +531,7 @@ try {
         } else {
             # Serve Static Web Assets
             $webDir = Join-Path $PSScriptRoot "web"
+            $fullWebDir = (Resolve-Path $webDir).Path
             $mimeType = "application/octet-stream"
             $resolvedPath = ""
             
@@ -544,7 +551,13 @@ try {
             }
             
             if (Test-Path $resolvedPath -PathType Leaf) {
-                Send-HtmlResponse $context $resolvedPath $mimeType
+                $canonicalPath = (Resolve-Path $resolvedPath).Path
+                if ($canonicalPath.StartsWith($fullWebDir)) {
+                    Send-HtmlResponse $context $canonicalPath $mimeType
+                } else {
+                    $context.Response.StatusCode = 403
+                    $context.Response.Close()
+                }
             } else {
                 $context.Response.StatusCode = 404
                 $context.Response.Close()
