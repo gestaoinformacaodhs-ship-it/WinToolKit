@@ -1,4 +1,4 @@
-﻿// Global Variables & Configuration
+// Global Variables & Configuration
 const API_BASE = ''; // Same host as the dashboard
 const DIAGNOSTICS_POLL_INTERVAL = 3000; // 3 seconds
 const CIRCUMFERENCE = 2 * Math.PI * 70; // 439.822
@@ -108,7 +108,7 @@ async function fetchDiagnostics() {
         document.getElementById('cpu-text').textContent = `${cpuPercent}%`;
         document.getElementById('cpu-badge').textContent = `${cpuPercent}%`;
         updateRingProgress('cpu-ring', cpuPercent);
-        document.getElementById('info-cpu-model').textContent = data.cpuModel || 'Processador GenÃ©rico';
+        document.getElementById('info-cpu-model').textContent = data.cpuModel || 'Processador Genérico';
         
         const ramPercent = Math.round(data.ramPercent) || 0;
         document.getElementById('ram-text').textContent = `${ramPercent}%`;
@@ -131,12 +131,12 @@ async function fetchDiagnostics() {
         if (pingVal !== null && pingVal >= 0) {
             pingEl.textContent = pingVal;
             pingEl.style.color = 'var(--emerald)';
-            pingBadge.textContent = 'EstÃ¡vel';
+            pingBadge.textContent = 'Estável';
             pingBadge.className = 'net-val-badge badge-running';
         } else {
             pingEl.textContent = '--';
             pingEl.style.color = 'var(--red)';
-            pingBadge.textContent = 'Sem ConexÃ£o';
+            pingBadge.textContent = 'Sem Conexão';
             pingBadge.className = 'net-val-badge badge-stopped';
         }
         
@@ -163,18 +163,18 @@ async function fetchDiagnostics() {
 async function runTool(toolKey) {
     let actionFriendlyName = '';
     switch(toolKey) {
-        case 'cleanup_temp': actionFriendlyName = 'Limpeza de Arquivos TemporÃ¡rios'; break;
+        case 'cleanup_temp': actionFriendlyName = 'Limpeza de Arquivos Temporários'; break;
         case 'repair_network': actionFriendlyName = 'Reparo de Rede (Winsock/DNS)'; break;
-        case 'gpupdate': actionFriendlyName = 'AtualizaÃ§Ã£o de PolÃ­ticas (GPUPDATE)'; break;
-        case 'sfc_scan': actionFriendlyName = 'VerificaÃ§Ã£o de Arquivos de Sistema (SFC)'; break;
+        case 'gpupdate': actionFriendlyName = 'Atualização de Políticas (GPUPDATE)'; break;
+        case 'sfc_scan': actionFriendlyName = 'Verificação de Arquivos de Sistema (SFC)'; break;
         case 'dism_repair': actionFriendlyName = 'Reparo de Imagem do Windows (DISM)'; break;
-        default: actionFriendlyName = 'OperaÃ§Ã£o do Sistema';
+        default: actionFriendlyName = 'Operação do Sistema';
     }
     
     // Jump to Console view to show logs
     document.getElementById('nav-console').click();
     
-    logToConsole(`[GATILHO] Iniciando aÃ§Ã£o: "${actionFriendlyName}"...`, 'command');
+    logToConsole(`[GATILHO] Iniciando ação: "${actionFriendlyName}"...`, 'command');
     
     try {
         const response = await fetch(`${API_BASE}/api/action`, {
@@ -187,13 +187,13 @@ async function runTool(toolKey) {
         const data = await response.json();
         
         if (data.success && data.jobId) {
-            logToConsole(`Processo alocado com ID do Job: ${data.jobId}. Monitorando execuÃ§Ã£o...`, 'info');
+            logToConsole(`Processo alocado com ID do Job: ${data.jobId}. Monitorando execução...`, 'info');
             startJobPolling(data.jobId, actionFriendlyName);
         } else {
             throw new Error(data.message || 'Resposta inesperada do servidor.');
         }
     } catch (error) {
-        logToConsole(`[FALHA] NÃ£o foi possÃ­vel iniciar "${actionFriendlyName}": ${error.message}`, 'error');
+        logToConsole(`[FALHA] Não foi possível iniciar "${actionFriendlyName}": ${error.message}`, 'error');
     }
 }
 
@@ -218,7 +218,7 @@ function startJobPolling(jobId, actionName) {
             if (data.newLogs && data.newLogs.length > 0) {
                 data.newLogs.forEach(logLine => {
                     let logClass = 'line-info';
-                    if (logLine.includes('[SUCESSO]') || logLine.includes('com Ãªxito') || logLine.includes('com sucesso')) {
+                    if (logLine.includes('[SUCESSO]') || logLine.includes('com êxito') || logLine.includes('com sucesso')) {
                         logClass = 'line-success';
                     } else if (logLine.includes('[ERRO]') || logLine.includes('falhou') || logLine.includes('Access Denied')) {
                         logClass = 'line-error';
@@ -232,11 +232,11 @@ function startJobPolling(jobId, actionName) {
             // Check completed status
             if (data.status === 'completed') {
                 activePollingJobs.delete(jobId);
-                logToConsole(`[FINALIZADO] AÃ§Ã£o "${actionName}" concluÃ­da com sucesso!`, 'success');
+                logToConsole(`[FINALIZADO] Ação "${actionName}" concluída com sucesso!`, 'success');
                 fetchDiagnostics(); // Refresh data in case disk space was freed
             } else if (data.status === 'failed') {
                 activePollingJobs.delete(jobId);
-                logToConsole(`[FALHA] AÃ§Ã£o "${actionName}" terminou com erros.`, 'error');
+                logToConsole(`[FALHA] Ação "${actionName}" terminou com erros.`, 'error');
             } else {
                 // Task is still running, schedule next poll ONLY after this one resolved
                 const timeoutId = setTimeout(poll, 700);
@@ -247,14 +247,14 @@ function startJobPolling(jobId, actionName) {
             if (consecutiveFailures < MAX_RETRIES) {
                 // Alert once when network reset cuts local connection
                 if (consecutiveFailures === 1) {
-                    logToConsole(`[MONITOR] ConexÃ£o com o servidor local interrompida temporariamente (Reparo de Rede ativo). Tentando reconectar...`, 'line-warning');
+                    logToConsole(`[MONITOR] Conexão com o servidor local interrompida temporariamente (Reparo de Rede ativo). Tentando reconectar...`, 'line-warning');
                 }
                 // Try again with a larger delay to wait for network stack renewal
                 const timeoutId = setTimeout(poll, 1200);
                 activePollingJobs.set(jobId, timeoutId);
             } else {
                 activePollingJobs.delete(jobId);
-                logToConsole(`[MONITOR] Erro definitivo ao obter atualizaÃ§Ãµes do processo: ${error.message} (Sem resposta do servidor apÃ³s vÃ¡rias tentativas)`, 'error');
+                logToConsole(`[MONITOR] Erro definitivo ao obter atualizações do processo: ${error.message} (Sem resposta do servidor após várias tentativas)`, 'error');
             }
         }
     }
@@ -269,7 +269,7 @@ async function loadServices() {
     const tbody = document.getElementById('services-list-tbody');
     try {
         const response = await fetch(`${API_BASE}/api/services`);
-        if (!response.ok) throw new Error('Erro ao listar serviÃ§os');
+        if (!response.ok) throw new Error('Erro ao listar serviços');
         const data = await response.json();
         
         tbody.innerHTML = '';
@@ -300,13 +300,13 @@ async function loadServices() {
                     </span>
                 </td>
                 <td class="actions-cell">
-                    <button class="btn-action-circle start" title="Iniciar ServiÃ§o" onclick="controlService('${service.Name}', 'start')">
+                    <button class="btn-action-circle start" title="Iniciar Serviço" onclick="controlService('${service.Name}', 'start')">
                         <i class="fa-solid fa-play"></i>
                     </button>
-                    <button class="btn-action-circle stop" title="Parar ServiÃ§o" onclick="controlService('${service.Name}', 'stop')">
+                    <button class="btn-action-circle stop" title="Parar Serviço" onclick="controlService('${service.Name}', 'stop')">
                         <i class="fa-solid fa-stop"></i>
                     </button>
-                    <button class="btn-action-circle restart" title="Reiniciar ServiÃ§o" onclick="controlService('${service.Name}', 'restart')">
+                    <button class="btn-action-circle restart" title="Reiniciar Serviço" onclick="controlService('${service.Name}', 'restart')">
                         <i class="fa-solid fa-rotate-left"></i>
                     </button>
                 </td>
@@ -315,7 +315,7 @@ async function loadServices() {
         });
     } catch (error) {
         console.error('Error loading services:', error);
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--red);">Falha ao obter lista de serviÃ§os: ${error.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--red);">Falha ao obter lista de serviços: ${error.message}</td></tr>`;
     }
 }
 
@@ -325,7 +325,7 @@ async function controlService(serviceName, action) {
     else if (action === 'stop') actionFriendly = 'parar';
     else if (action === 'restart') actionFriendly = 'reiniciar';
     
-    logToConsole(`[SERVICO] Solicitando ${actionFriendly} do serviÃ§o "${serviceName}"...`, 'command');
+    logToConsole(`[SERVICO] Solicitando ${actionFriendly} do serviço "${serviceName}"...`, 'command');
     
     try {
         const response = await fetch(`${API_BASE}/api/service-control`, {
@@ -334,7 +334,7 @@ async function controlService(serviceName, action) {
             body: JSON.stringify({ service: serviceName, action: action })
         });
         
-        if (!response.ok) throw new Error('Falha na comunicaÃ§Ã£o com o servidor de serviÃ§os');
+        if (!response.ok) throw new Error('Falha na comunicação com o servidor de serviços');
         const data = await response.json();
         
         if (data.success) {
@@ -344,7 +344,7 @@ async function controlService(serviceName, action) {
             throw new Error(data.message || 'Sem retorno de sucesso.');
         }
     } catch (error) {
-        logToConsole(`[SERVICO ERRO] Falha ao tentar alterar o serviÃ§o "${serviceName}": ${error.message}`, 'error');
+        logToConsole(`[SERVICO ERRO] Falha ao tentar alterar o serviço "${serviceName}": ${error.message}`, 'error');
     }
 }
 
@@ -396,11 +396,11 @@ function copyConsoleLogs() {
         
     navigator.clipboard.writeText(lines)
         .then(() => {
-            alert('Logs copiados para a Ã¡rea de transferÃªncia com sucesso!');
+            alert('Logs copiados para a área de transferência com sucesso!');
         })
         .catch(err => {
             console.error('Falha ao copiar logs:', err);
-            alert('Falha ao copiar logs. Verifique permissÃµes do navegador.');
+            alert('Falha ao copiar logs. Verifique permissões do navegador.');
         });
 }
 
@@ -427,7 +427,16 @@ async function checkUpdatesOnStartup() {
 }
 
 /** Show the floating update notification pill */
-    if (updateText) updateText.textContent = `Nova versÃ£o: ${latestVersion}`;
+function showUpdateBanner(latestVersion) {
+    const updatePill = document.getElementById('update-pill');
+    const updateText = document.getElementById('update-pill-text');
+    if (!updatePill) return;
+
+    updatePill.classList.remove('hidden');
+    updatePill.classList.remove('updating');
+    updatePill.classList.add('ready');
+
+    if (updateText) updateText.textContent = `Nova versão: ${latestVersion}`;
     
     updatePill.onclick = () => {
         performAutoUpdate();
@@ -450,7 +459,7 @@ async function performAutoUpdate() {
     if (btnInstall) { btnInstall.disabled = true; btnInstall.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Baixando...'; }
     if (btnDo)      { btnDo.disabled = true; }
 
-    if (msgEl) { msgEl.textContent = 'Baixando atualizaÃ§Ã£o automÃ¡tica...'; msgEl.style.color = 'var(--cyan)'; }
+    if (msgEl) { msgEl.textContent = 'Baixando atualização automática...'; msgEl.style.color = 'var(--cyan)'; }
 
     // Antigravity style update UI
     if (updatePill) {
@@ -462,7 +471,7 @@ async function performAutoUpdate() {
         if (updateText) updateText.textContent = 'Downloading Update...';
     }
 
-    logToConsole('[ATUALIZAÃ‡ÃƒO] Iniciando download da atualizaÃ§Ã£o...', 'command');
+    logToConsole('[ATUALIZAÇíO] Iniciando download da atualização...', 'command');
 
     try {
         const res = await fetch(`${API_BASE}/api/action`, {
@@ -475,7 +484,7 @@ async function performAutoUpdate() {
         if (!data.success) throw new Error(data.message || 'Falha ao iniciar job de download.');
 
         const jobId = data.jobId;
-        logToConsole(`[ATUALIZAÃ‡ÃƒO] Processo alocado. Monitorando download...`, 'info');
+        logToConsole(`[ATUALIZAÇíO] Processo alocado. Monitorando download...`, 'info');
 
         const pollInterval = setInterval(async () => {
             try {
@@ -487,7 +496,7 @@ async function performAutoUpdate() {
                         const ltype = line.includes('[ERRO]') ? 'error'
                                     : line.includes('[SUCESSO]') ? 'success'
                                     : line.includes('[AVISO]') ? 'warning' : 'info';
-                        logToConsole(`[ATUALIZAÃ‡ÃƒO] ${line}`, ltype);
+                        logToConsole(`[ATUALIZAÇíO] ${line}`, ltype);
                     });
                 }
 
@@ -495,8 +504,8 @@ async function performAutoUpdate() {
                     clearInterval(pollInterval);
                     const bar = document.getElementById('update-progress-bar');
                     if (bar) bar.style.width = '100%';
-                    logToConsole('[ATUALIZAÃ‡ÃƒO] AtualizaÃ§Ã£o concluÃ­da! O WinToolKit serÃ¡ reiniciado automaticamente.', 'success');
-                    if (msgEl) { msgEl.textContent = 'âœ… AtualizaÃ§Ã£o aplicada com sucesso! O WinToolKit serÃ¡ reiniciado.'; msgEl.style.color = 'var(--emerald)'; }
+                    logToConsole('[ATUALIZAÇíO] Atualização concluída! O WinToolKit será reiniciado automaticamente.', 'success');
+                    if (msgEl) { msgEl.textContent = '✅ Atualização aplicada com sucesso! O WinToolKit será reiniciado.'; msgEl.style.color = 'var(--emerald)'; }
                     
                     if (updatePill) {
                         updatePill.classList.add('ready');
@@ -517,20 +526,20 @@ async function performAutoUpdate() {
                 } else if (statusData.status === 'failed') {
                     clearInterval(pollInterval);
                     clearInterval(progressInterval);
-                    throw new Error('Job de atualizaÃ§Ã£o falhou no servidor.');
+                    throw new Error('Job de atualização falhou no servidor.');
                 }
             } catch (pollErr) {
                 clearInterval(pollInterval);
                 clearInterval(progressInterval);
-                logToConsole(`[ATUALIZAÃ‡ÃƒO ERRO] Falha ao monitorar atualizaÃ§Ã£o: ${pollErr.message}`, 'error');
+                logToConsole(`[ATUALIZAÇíO ERRO] Falha ao monitorar atualização: ${pollErr.message}`, 'error');
                 if (btnInstall) { btnInstall.disabled = false; btnInstall.innerHTML = '<i class="fa-solid fa-bolt"></i> Tentar Novamente'; }
                 if (btnDo) { btnDo.disabled = false; }
             }
         }, 1500);
 
     } catch (error) {
-        logToConsole(`[ATUALIZAÃ‡ÃƒO ERRO] ${error.message}`, 'error');
-        if (msgEl) { msgEl.textContent = 'Erro ao iniciar atualizaÃ§Ã£o: ' + error.message; msgEl.style.color = 'var(--red)'; }
+        logToConsole(`[ATUALIZAÇíO ERRO] ${error.message}`, 'error');
+        if (msgEl) { msgEl.textContent = 'Erro ao iniciar atualização: ' + error.message; msgEl.style.color = 'var(--red)'; }
         if (btnInstall) { btnInstall.disabled = false; btnInstall.innerHTML = '<i class="fa-solid fa-bolt"></i> Tentar Novamente'; }
         if (btnDo) { btnDo.disabled = false; }
     }
@@ -542,7 +551,7 @@ async function checkUpdates() {
     const latestVersionEl = document.getElementById('latest-version-text');
     const btnUpdate      = document.getElementById('btn-do-update');
     
-    msgEl.textContent = 'Verificando servidor de atualizaÃ§Ãµes...';
+    msgEl.textContent = 'Verificando servidor de atualizações...';
     msgEl.style.color = 'var(--text-muted)';
     
     try {
@@ -551,7 +560,7 @@ async function checkUpdates() {
             `https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main/version.json?t=${timestamp}`,
             { cache: 'no-store' }
         );
-        if (!response.ok) throw new Error(`Servidor retornou erro ${response.status}. Verifique se o repositÃ³rio GitHub Ã© PÃºblico.`);
+        if (!response.ok) throw new Error(`Servidor retornou erro ${response.status}. Verifique se o repositório GitHub é Público.`);
         
         const data = await response.json();
         const latestVersion = data.version;
@@ -559,18 +568,18 @@ async function checkUpdates() {
         latestVersionEl.textContent = latestVersion;
         
         if (latestVersion !== CURRENT_VERSION) {
-            msgEl.textContent = 'ðŸš€ Nova versÃ£o disponÃ­vel! Clique em Atualizar Automaticamente.';
+            msgEl.textContent = '🚀 Nova versão disponível! Clique em Atualizar Automaticamente.';
             msgEl.style.color = 'var(--cyan)';
             btnUpdate.classList.remove('hidden');
             // Also show the banner if it was dismissed
             showUpdateBanner(latestVersion);
         } else {
-            msgEl.textContent = 'âœ… VocÃª jÃ¡ possui a versÃ£o mais recente do WinToolKit.';
+            msgEl.textContent = '✅ Você já possui a versão mais recente do WinToolKit.';
             msgEl.style.color = 'var(--emerald)';
             btnUpdate.classList.add('hidden');
         }
     } catch (error) {
-        msgEl.textContent = 'Erro ao verificar atualizaÃ§Ãµes: ' + error.message;
+        msgEl.textContent = 'Erro ao verificar atualizações: ' + error.message;
         msgEl.style.color = 'var(--red)';
     }
 }
