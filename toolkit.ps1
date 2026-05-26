@@ -420,7 +420,7 @@ try {
                 "download_update" {
                     $scriptBlock = {
                         $repoBase   = "https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main"
-                        $installDir = $PSScriptRoot
+                        $installDir = $using:PSScriptRoot
                         $tempDir    = $env:TEMP
 
                         Write-Output "Iniciando download da atualizacao do WinToolKit..."
