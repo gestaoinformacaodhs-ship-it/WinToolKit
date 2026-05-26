@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -42,7 +42,7 @@
                 </a>
                 <a class="nav-item" id="nav-services">
                     <i class="fa-solid fa-gears"></i>
-                    <span>ServiÃ§os do Sistema</span>
+                    <span>Serviços do Sistema</span>
                 </a>
                 <a class="nav-item" id="nav-console">
                     <i class="fa-solid fa-rectangle-list"></i>
@@ -50,7 +50,11 @@
                 </a>
                 <a class="nav-item" id="nav-updates">
                     <i class="fa-solid fa-cloud-arrow-down"></i>
-                    <span>AtualizaÃ§Ãµes</span>
+                    <span>Atualizações</span>
+                </a>
+                <a class="nav-item" id="nav-settings">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Configurações</span>
                 </a>
             </nav>
             
@@ -74,7 +78,7 @@
             <header class="app-header">
                 <div class="header-welcome" id="header-welcome">
                     <h2>Ambiente Operacional Windows</h2>
-                    <p>UtilitÃ¡rios automatizados para otimizaÃ§Ã£o de rotinas de suporte.</p>
+                    <p>Utilitários automatizados para otimização de rotinas de suporte.</p>
                 </div>
                 <!-- Antigravity Style Update Pill -->
                 <div class="update-pill hidden" id="update-pill">
@@ -105,8 +109,8 @@
                 <!-- Section: Dashboard -->
                 <section id="sect-dashboard" class="content-section">
                     <div class="section-title">
-                        <h3><i class="fa-solid fa-circle-nodes"></i> DiagnÃ³stico RÃ¡pido</h3>
-                        <p>VisÃ£o geral da integridade do hardware, rede e sistema operacional.</p>
+                        <h3><i class="fa-solid fa-circle-nodes"></i> Diagnóstico Rápido</h3>
+                        <p>Visão geral da integridade do hardware, rede e sistema operacional.</p>
                     </div>
 
                     <!-- Metrics Grid (Gauges) -->
@@ -132,7 +136,7 @@
                         <!-- Gauge Card: RAM -->
                         <div class="gauge-card">
                             <div class="gauge-header">
-                                <span class="gauge-title"><i class="fa-solid fa-memory"></i> MemÃ³ria RAM</span>
+                                <span class="gauge-title"><i class="fa-solid fa-memory"></i> Memória RAM</span>
                                 <span class="gauge-badge" id="ram-badge">-- / -- GB</span>
                             </div>
                             <div class="gauge-visual">
@@ -143,7 +147,7 @@
                                 <div class="gauge-value" id="ram-text">0%</div>
                             </div>
                             <div class="gauge-details">
-                                <span>Utilizado: <strong id="ram-used">0.0 GB</strong> | DisponÃ­vel: <strong id="ram-free">0.0 GB</strong></span>
+                                <span>Utilizado: <strong id="ram-used">0.0 GB</strong> | Disponível: <strong id="ram-free">0.0 GB</strong></span>
                             </div>
                         </div>
 
@@ -161,7 +165,7 @@
                                 <div class="gauge-value" id="disk-text">0%</div>
                             </div>
                             <div class="gauge-details">
-                                <span>EspaÃ§o Livre: <strong id="disk-free">0 GB</strong> livres</span>
+                                <span>Espaço Livre: <strong id="disk-free">0 GB</strong> livres</span>
                             </div>
                         </div>
                     </div>
@@ -170,14 +174,14 @@
                     <div class="details-row">
                         <!-- OS Info Panel -->
                         <div class="details-panel flex-2">
-                            <h4><i class="fa-solid fa-windows"></i> InformaÃ§Ãµes do Sistema</h4>
+                            <h4><i class="fa-solid fa-windows"></i> Informações do Sistema</h4>
                             <div class="info-list">
                                 <div class="info-row">
                                     <span class="label">S.O. Instalado</span>
                                     <span class="value" id="info-os-name">Carregando...</span>
                                 </div>
                                 <div class="info-row">
-                                    <span class="label">VersÃ£o & Build</span>
+                                    <span class="label">Versão & Build</span>
                                     <span class="value" id="info-os-version">Carregando...</span>
                                 </div>
                                 <div class="info-row">
@@ -185,7 +189,7 @@
                                     <span class="value" id="info-uptime">Carregando...</span>
                                 </div>
                                 <div class="info-row">
-                                    <span class="label">InstalaÃ§Ã£o Original</span>
+                                    <span class="label">Instalação Original</span>
                                     <span class="value" id="info-install-date">Carregando...</span>
                                 </div>
                             </div>
@@ -198,11 +202,11 @@
                                 <div class="ping-latency">
                                     <span class="ping-number" id="net-ping">--</span>
                                     <span class="ping-unit">ms</span>
-                                    <p class="ping-label">LatÃªncia (8.8.8.8)</p>
+                                    <p class="ping-label">Latência (8.8.8.8)</p>
                                 </div>
                                 <div class="net-address-list">
                                     <div class="net-address-row">
-                                        <span class="net-lbl">EndereÃ§o IPv4</span>
+                                        <span class="net-lbl">Endereço IPv4</span>
                                         <span class="net-val" id="info-ipv4">Carregando...</span>
                                     </div>
                                     <div class="net-address-row">
@@ -218,8 +222,8 @@
                 <!-- Section: Cleanup & Repairs -->
                 <section id="sect-cleanup" class="content-section hidden">
                     <div class="section-title">
-                        <h3><i class="fa-solid fa-wand-magic-sparkles"></i> ManutenÃ§Ã£o & OtimizaÃ§Ãµes</h3>
-                        <p>Gatilhos rÃ¡pidos para restaurar performance e corrigir falhas comuns de rede e sistema.</p>
+                        <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Manutenção & Otimizações</h3>
+                        <p>Gatilhos rápidos para restaurar performance e corrigir falhas comuns de rede e sistema.</p>
                     </div>
 
                     <div class="tools-grid">
@@ -229,8 +233,8 @@
                                 <i class="fa-solid fa-trash-can"></i>
                             </div>
                             <div class="tool-info">
-                                <h5>Limpeza de Arquivos TemporÃ¡rios</h5>
-                                <p>Limpa %TEMP%, Prefetch, Lixeira e cache do Windows Update para liberar espaÃ§o e otimizar velocidade.</p>
+                                <h5>Limpeza de Arquivos Temporários</h5>
+                                <p>Limpa %TEMP%, Prefetch, Lixeira e cache do Windows Update para liberar espaço e otimizar velocidade.</p>
                                 <button class="btn btn-primary" onclick="runTool('cleanup_temp')">
                                     <i class="fa-solid fa-play"></i> Iniciar Limpeza
                                 </button>
@@ -243,8 +247,8 @@
                                 <i class="fa-solid fa-route"></i>
                             </div>
                             <div class="tool-info">
-                                <h5>Reparos BÃ¡sicos de Rede (Flush DNS)</h5>
-                                <p>Libera/renova IP, limpa cache DNS e reinicia catÃ¡logos Winsock/TCP-IP para resolver falhas de conexÃ£o.</p>
+                                <h5>Reparos Básicos de Rede (Flush DNS)</h5>
+                                <p>Libera/renova IP, limpa cache DNS e reinicia catálogos Winsock/TCP-IP para resolver falhas de conexão.</p>
                                 <button class="btn btn-indigo" onclick="runTool('repair_network')">
                                     <i class="fa-solid fa-play"></i> Corrigir Rede
                                 </button>
@@ -257,10 +261,10 @@
                                 <i class="fa-solid fa-arrows-spin"></i>
                             </div>
                             <div class="tool-info">
-                                <h5>Atualizar PolÃ­ticas (GPUPDATE)</h5>
-                                <p>ForÃ§a a sincronizaÃ§Ã£o imediata de polÃ­ticas de grupo (GPOs) locais e de domÃ­nio no computador.</p>
+                                <h5>Atualizar Políticas (GPUPDATE)</h5>
+                                <p>Força a sincronização imediata de políticas de grupo (GPOs) locais e de domínio no computador.</p>
                                 <button class="btn btn-emerald" onclick="runTool('gpupdate')">
-                                    <i class="fa-solid fa-arrows-spin"></i> ForÃ§ar AtualizaÃ§Ã£o
+                                    <i class="fa-solid fa-arrows-spin"></i> Forçar Atualização
                                 </button>
                             </div>
                         </div>
@@ -271,8 +275,8 @@
                                 <i class="fa-solid fa-shield-halved"></i>
                             </div>
                             <div class="tool-info">
-                                <h5>VerificaÃ§Ã£o do Sistema (SFC / DISM)</h5>
-                                <p>Varre arquivos protegidos do Windows (SFC) e executa o DISM para corrigir corrupÃ§Ãµes na imagem do sistema.</p>
+                                <h5>Verificação do Sistema (SFC / DISM)</h5>
+                                <p>Varre arquivos protegidos do Windows (SFC) e executa o DISM para corrigir corrupções na imagem do sistema.</p>
                                 <div class="tool-btn-group">
                                     <button class="btn btn-amber" onclick="runTool('sfc_scan')">
                                         <i class="fa-solid fa-magnifying-glass"></i> SFC Scan
@@ -289,13 +293,13 @@
                 <!-- Section: Services -->
                 <section id="sect-services" class="content-section hidden">
                     <div class="section-title">
-                        <h3><i class="fa-solid fa-gears"></i> Controle de ServiÃ§os</h3>
-                        <p>Monitore e gerencie o estado de serviÃ§os operacionais fundamentais do Windows.</p>
+                        <h3><i class="fa-solid fa-gears"></i> Controle de Serviços</h3>
+                        <p>Monitore e gerencie o estado de serviços operacionais fundamentais do Windows.</p>
                     </div>
 
                     <div class="services-container">
                         <div class="services-header-actions">
-                            <span class="services-count"><strong id="srv-count">0</strong> serviÃ§os monitorados</span>
+                            <span class="services-count"><strong id="srv-count">0</strong> serviços monitorados</span>
                             <button class="btn btn-sm btn-outline" onclick="loadServices()">
                                 <i class="fa-solid fa-rotate"></i> Atualizar Lista
                             </button>
@@ -306,14 +310,14 @@
                                 <thead>
                                     <tr>
                                         <th>Nome Exibido</th>
-                                        <th>Nome do ServiÃ§o</th>
+                                        <th>Nome do Serviço</th>
                                         <th>Estado</th>
-                                        <th>AÃ§Ãµes</th>
+                                        <th>Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody id="services-list-tbody">
                                     <tr>
-                                        <td colspan="4" class="text-center">Carregando lista de serviÃ§os...</td>
+                                        <td colspan="4" class="text-center">Carregando lista de serviços...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -324,8 +328,8 @@
                 <!-- Section: Console -->
                 <section id="sect-console" class="content-section hidden">
                     <div class="section-title">
-                        <h3><i class="fa-solid fa-terminal"></i> Console de ExecuÃ§Ã£o</h3>
-                        <p>Verifique o fluxo contÃ­nuo de registros, saÃ­das de comandos e diagnÃ³sticos executados pelo toolkit.</p>
+                        <h3><i class="fa-solid fa-terminal"></i> Console de Execução</h3>
+                        <p>Verifique o fluxo contínuo de registros, saídas de comandos e diagnósticos executados pelo toolkit.</p>
                     </div>
 
                     <div class="console-box">
@@ -337,7 +341,7 @@
                             </div>
                             <span class="console-title">wintoolkit-terminal.log</span>
                             <div class="console-actions">
-                                <button class="console-btn" title="Copiar logs para a Ã¡rea de transferÃªncia" onclick="copyConsoleLogs()">
+                                <button class="console-btn" title="Copiar logs para a área de transferência" onclick="copyConsoleLogs()">
                                     <i class="fa-regular fa-copy"></i> Copiar Logs
                                 </button>
                                 <button class="console-btn" title="Limpar terminal" onclick="clearConsole()">
@@ -346,8 +350,8 @@
                             </div>
                         </div>
                         <div class="console-body" id="console-output">
-                            <div class="console-line line-info">[INFO] WinToolKit carregado. Pronto para receber requisiÃ§Ãµes de suporte.</div>
-                            <div class="console-line line-warning">[AVISO] Certifique-se de executar este utilitÃ¡rio como Administrador para o correto funcionamento das automaÃ§Ãµes.</div>
+                            <div class="console-line line-info">[INFO] WinToolKit carregado. Pronto para receber requisições de suporte.</div>
+                            <div class="console-line line-warning">[AVISO] Certifique-se de executar este utilitário como Administrador para o correto funcionamento das automações.</div>
                         </div>
                     </div>
                 </section>
@@ -355,32 +359,82 @@
                 <!-- Section: Updates -->
                 <section id="sect-updates" class="content-section hidden">
                     <div class="section-title">
-                        <h3><i class="fa-solid fa-cloud-arrow-down"></i> AtualizaÃ§Ãµes do Sistema</h3>
-                        <p>Verifique se hÃ¡ novas versÃµes do WinToolKit disponÃ­veis no servidor e atualize automaticamente.</p>
+                        <h3><i class="fa-solid fa-cloud-arrow-down"></i> Atualizações do Sistema</h3>
+                        <p>Verifique se há novas versões do WinToolKit disponíveis no servidor e atualize automaticamente.</p>
                     </div>
 
                     <div class="details-panel panel-max-600">
-                        <h4>Status da VersÃ£o</h4>
+                        <h4>Status da Versão</h4>
                         <div class="info-list mt-15">
                             <div class="info-row">
-                                <span class="label">VersÃ£o Atual:</span>
+                                <span class="label">Versão Atual:</span>
                                 <span class="value text-bold-cyan" id="current-version-text">v1.0.12</span>
                             </div>
                             <div class="info-row">
-                                <span class="label">Ãšltima VersÃ£o DisponÃ­vel:</span>
+                                <span class="label">Última Versão Disponível:</span>
                                 <span class="value" id="latest-version-text">Desconhecido</span>
                             </div>
                         </div>
 
                         <div class="updates-action-group">
                             <button class="btn btn-primary" id="btn-check-update" onclick="checkUpdates()">
-                                <i class="fa-solid fa-arrows-rotate"></i> Verificar AtualizaÃ§Ã£o
+                                <i class="fa-solid fa-arrows-rotate"></i> Verificar Atualização
                             </button>
                             <button class="btn btn-emerald hidden" id="btn-do-update" onclick="performAutoUpdate()">
                                 <i class="fa-solid fa-bolt"></i> Atualizar Automaticamente
                             </button>
                         </div>
                         <p id="update-status-msg"></p>
+                    </div>
+                </section>
+                
+                <!-- Section: Settings -->
+                <section id="sect-settings" class="content-section hidden">
+                    <div class="section-title">
+                        <h3><i class="fa-solid fa-gear"></i> Configurações</h3>
+                        <p>Personalize a aparência e o comportamento do WinToolKit.</p>
+                    </div>
+
+                    <div class="settings-grid">
+                        <!-- Appearance Panel -->
+                        <div class="details-panel">
+                            <h4><i class="fa-solid fa-palette"></i> Aparência e Temas</h4>
+                            <div class="settings-options mt-15">
+                                <p class="settings-desc">Escolha o esquema de cores que melhor se adapta ao seu ambiente de trabalho.</p>
+                                <div class="theme-selector">
+                                    <div class="theme-card" id="theme-blue" onclick="setTheme('blue')">
+                                        <div class="theme-preview bg-blue-preview"></div>
+                                        <span>Blue (Padrão)</span>
+                                    </div>
+                                    <div class="theme-card" id="theme-dark" onclick="setTheme('dark')">
+                                        <div class="theme-preview bg-dark-preview"></div>
+                                        <span>Dark (Escuro)</span>
+                                    </div>
+                                    <div class="theme-card" id="theme-light" onclick="setTheme('light')">
+                                        <div class="theme-preview bg-light-preview"></div>
+                                        <span>Light (Claro)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- System Behavior Panel -->
+                        <div class="details-panel">
+                            <h4><i class="fa-solid fa-power-off"></i> Comportamento do Sistema</h4>
+                            <div class="settings-options mt-15">
+                                <div class="toggle-row">
+                                    <div class="toggle-info">
+                                        <span class="toggle-title">Iniciar com o Windows (Auto-Start)</span>
+                                        <span class="toggle-desc">O WinToolKit abrirá automaticamente na bandeja do sistema ao ligar o computador.</span>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="toggle-autostart" onchange="toggleAutoStart(this)">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                                <p id="autostart-status-msg" class="status-msg"></p>
+                            </div>
+                        </div>
                     </div>
                 </section>
                 

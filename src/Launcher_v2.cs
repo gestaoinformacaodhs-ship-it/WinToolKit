@@ -24,7 +24,7 @@ namespace WinToolKit
         {
             if (!IsAdministrator())
             {
-                ElevateAndExit();
+                ElevateAndExit(args);
                 return;
             }
 
@@ -32,22 +32,28 @@ namespace WinToolKit
             Mutex mutex = new Mutex(true, MutexName, out createdNew);
             if (!createdNew)
             {
-                MessageBox.Show(
-                    "O WinToolKit ja esta em execucao. Verifique a bandeja do sistema.",
-                    "WinToolKit",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information
-                );
+                // If it's already running, don't show message if -silent is passed
+                if (args.Length == 0 || args[0].ToLower() != "-silent")
+                {
+                    MessageBox.Show(
+                        "O WinToolKit ja esta em execucao. Verifique a bandeja do sistema.",
+                        "WinToolKit",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information
+                    );
+                }
                 return;
             }
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            var launcher = new Launcher();
+            
+            bool silent = args.Length > 0 && args[0].ToLower() == "-silent";
+            var launcher = new Launcher(silent);
             Application.Run(launcher);
         }
 
-        public Launcher()
+        public Launcher(bool silent)
         {
             sessionToken = Guid.NewGuid().ToString("N");
             appDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -78,7 +84,11 @@ namespace WinToolKit
             InitializeTray();
             StartBackend();
             Thread.Sleep(3000);
-            OpenDashboard();
+            
+            if (!silent)
+            {
+                OpenDashboard();
+            }
 
             trayIcon.ShowBalloonTip(
                 3000,
@@ -197,12 +207,16 @@ namespace WinToolKit
             return principal.IsInRole(WindowsBuiltInRole.Administrator);
         }
 
-        private static void ElevateAndExit()
+        private static void ElevateAndExit(string[] args)
         {
             ProcessStartInfo psi = new ProcessStartInfo();
             psi.FileName = Assembly.GetExecutingAssembly().Location;
             psi.Verb = "runas";
             psi.UseShellExecute = true;
+            if (args != null && args.Length > 0)
+            {
+                psi.Arguments = string.Join(" ", args);
+            }
             try { Process.Start(psi); } catch { }
             Environment.Exit(0);
         }

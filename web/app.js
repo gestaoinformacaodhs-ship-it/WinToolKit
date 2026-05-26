@@ -35,7 +35,8 @@ function setupNavigation() {
         'nav-cleanup': document.getElementById('sect-cleanup'),
         'nav-services': document.getElementById('sect-services'),
         'nav-console': document.getElementById('sect-console'),
-        'nav-updates': document.getElementById('sect-updates')
+        'nav-updates': document.getElementById('sect-updates'),
+        'nav-settings': document.getElementById('sect-settings')
     };
 
     navItems.forEach(item => {
@@ -421,20 +422,11 @@ async function checkUpdatesOnStartup() {
             showUpdateBanner(latestVersion);
         }
     } catch (_) {
-        // Silent - network error on startup check is non-critical
+// Silent - network error on startup check is non-critical
     }
 }
 
 /** Show the floating update notification pill */
-function showUpdateBanner(latestVersion) {
-    const updatePill = document.getElementById('update-pill');
-    const updateText = updatePill ? updatePill.querySelector('.update-text') : null;
-    const spinner = updatePill ? updatePill.querySelector('.update-spinner') : null;
-    if (!updatePill) return;
-
-    updatePill.classList.remove('hidden');
-    updatePill.classList.add('ready');
-    if (spinner) spinner.innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i>';
     if (updateText) updateText.textContent = `Nova versÃ£o: ${latestVersion}`;
     
     updatePill.onclick = () => {
@@ -583,3 +575,70 @@ async function checkUpdates() {
     }
 }
 
+
+// ==========================
+// CONFIGURAÇÕES E TEMAS
+// ==========================
+
+function setTheme(theme) {
+    localStorage.setItem('wtk_theme', theme);
+    document.body.className = '';
+    if (theme === 'dark') document.body.classList.add('theme-dark');
+    else if (theme === 'light') document.body.classList.add('theme-light');
+    
+    document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+    let activeCard = document.getElementById('theme-' + theme);
+    if(activeCard) activeCard.classList.add('active');
+    
+    logToConsole('Tema alterado para: ' + theme, 'info');
+}
+
+function loadTheme() {
+    const saved = localStorage.getItem('wtk_theme') || 'blue';
+    setTheme(saved);
+}
+
+async function loadSettingsState() {
+    try {
+        const resp = await fetch(API_BASE + '/api/settings');
+        if (resp.ok) {
+            const data = await resp.json();
+            const toggle = document.getElementById('toggle-autostart');
+            if(toggle) toggle.checked = data.autostart === true;
+        }
+    } catch(e) {}
+}
+
+async function toggleAutoStart(checkbox) {
+    const msg = document.getElementById('autostart-status-msg');
+    const isEnabled = checkbox.checked;
+    
+    try {
+        msg.textContent = 'Aplicando...';
+        msg.style.color = 'var(--text-muted)';
+        
+        const resp = await fetch(API_BASE + '/api/action', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ action: 'toggle_autostart', enabled: isEnabled })
+        });
+        
+        const data = await resp.json();
+        if(data.status === 'success') {
+            msg.textContent = isEnabled ? 'WinToolKit iniciará com o Windows.' : 'Inicialização automática desativada.';
+            msg.style.color = 'var(--emerald)';
+            logToConsole(msg.textContent, 'info');
+        } else {
+            throw new Error('Falha');
+        }
+    } catch(e) {
+        msg.textContent = 'Erro ao alterar configuração.';
+        msg.style.color = 'var(--red)';
+        checkbox.checked = !isEnabled;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadTheme();
+    loadSettingsState();
+});

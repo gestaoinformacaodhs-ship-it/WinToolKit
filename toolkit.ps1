@@ -244,6 +244,16 @@ try {
             
             Send-JsonResponse $context $servicesList
             
+        } elseif ($url.StartsWith("/api/settings") -and $method -eq "GET") {
+            # Settings state
+            $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+            $regValue = "WinToolKit"
+            $autostart = $false
+            if ((Get-ItemProperty -Path $regPath -Name $regValue -ErrorAction SilentlyContinue) -ne $null) {
+                $autostart = $true
+            }
+            Send-JsonResponse $context @{ autostart = $autostart }
+            
         } elseif ($url.StartsWith("/api/service-control") -and $method -eq "POST") {
             # Start/Stop/Restart services
             $reader = New-Object System.IO.StreamReader($request.InputStream, [System.Text.Encoding]::UTF8)
@@ -280,13 +290,34 @@ try {
             Send-JsonResponse $context @{ success = $success; message = $message }
             
         } elseif ($url.StartsWith("/api/action") -and $method -eq "POST") {
-            # Run Technical operations asynchronously
             $reader = New-Object System.IO.StreamReader($request.InputStream, [System.Text.Encoding]::UTF8)
             $body = $reader.ReadToEnd()
             $reader.Close()
             
             $params = $body | ConvertFrom-Json
             $action = $params.action
+            
+            # Handle synchronous actions like toggle_autostart
+            if ($action -eq "toggle_autostart") {
+                $enabled = $params.enabled
+                $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+                $regValue = "WinToolKit"
+                $exePath = Join-Path $PSScriptRoot "WinToolKit.exe"
+                
+                try {
+                    if ($enabled) {
+                        Set-ItemProperty -Path $regPath -Name $regValue -Value "`"$exePath`" -silent"
+                    } else {
+                        Remove-ItemProperty -Path $regPath -Name $regValue -ErrorAction SilentlyContinue
+                    }
+                    Send-JsonResponse $context @{ status = "success" }
+                } catch {
+                    Send-JsonResponse $context @{ status = "error"; message = $_.Exception.Message }
+                }
+                return # Exit this request
+            }
+            
+            # Run Technical operations asynchronously
             $jobId = [Guid]::NewGuid().ToString()
             
             $scriptBlock = $null
