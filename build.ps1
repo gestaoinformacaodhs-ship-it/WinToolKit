@@ -57,7 +57,7 @@ $launcherArgs = @(
 if ($LASTEXITCODE -eq 0 -and (Test-Path $launcherOut)) {
     Write-Host "[OK] WinToolKit.exe compilado com sucesso!" -ForegroundColor Green
     $size = (Get-Item $launcherOut).Length / 1KB
-    Write-Host "     Tamanho do arquivo: {0:N2} KB" -f $size -ForegroundColor Gray
+    Write-Host ("     Tamanho do arquivo: {0:N2} KB" -f $size) -ForegroundColor Gray
 } else {
     Write-Error "Falha ao compilar WinToolKit.exe!"
     exit 1
@@ -81,7 +81,7 @@ $installerArgs = @(
 if ($LASTEXITCODE -eq 0 -and (Test-Path $installerOut)) {
     Write-Host "[OK] Instalar.exe compilado com sucesso!" -ForegroundColor Green
     $size = (Get-Item $installerOut).Length / 1KB
-    Write-Host "     Tamanho do arquivo: {0:N2} KB" -f $size -ForegroundColor Gray
+    Write-Host ("     Tamanho do arquivo: {0:N2} KB" -f $size) -ForegroundColor Gray
 } else {
     Write-Error "Falha ao compilar Instalar.exe!"
     exit 1
