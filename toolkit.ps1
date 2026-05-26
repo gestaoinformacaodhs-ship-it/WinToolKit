@@ -380,15 +380,14 @@ try {
                         Write-Output "[SUCESSO] Use o botao 'Atualizar Automaticamente' para atualizar sem abrir o instalador."
                     }
                 }
-                "auto_update" {
+                "download_update" {
                     $scriptBlock = {
                         $repoBase   = "https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main"
                         $installDir = $PSScriptRoot
                         $tempDir    = $env:TEMP
 
-                        Write-Output "Iniciando atualizacao automatica do WinToolKit..."
-                        Write-Output "Diretorio de instalacao: $installDir"
-
+                        Write-Output "Iniciando download da atualizacao do WinToolKit..."
+                        
                         function Invoke-FileDownload {
                             param([string]$Url, [string]$Dest, [string]$Label)
                             Write-Output "Baixando $Label..."
@@ -448,11 +447,23 @@ try {
                         $bat += "del " + [char]34 + "%~f0" + [char]34 + $nl
 
                         $batchPath = "$tempDir\wintoolkit_updater.bat"
-                        [System.IO.File]::WriteAllText($batchPath, $bat, [System.Text.Encoding]::ASCII)
-
-                        Write-Output "Arquivos baixados. Agendando reinicio automatico..."
-                        Start-Process "cmd.exe" -ArgumentList ("/c " + [char]34 + $batchPath + [char]34) -WindowStyle Hidden
-                        Write-Output "[SUCESSO] Atualizacao agendada! O WinToolKit sera reiniciado automaticamente."
+                        [System.IO.File]::WriteAllText($batchPath, $bat)
+                        
+                        Write-Output "[SUCESSO] Todos os arquivos estao prontos para a atualizacao."
+                    }
+                }
+                "apply_update" {
+                    $scriptBlock = {
+                        $tempDir = $env:TEMP
+                        $batchPath = "$tempDir\wintoolkit_updater.bat"
+                        if (Test-Path $batchPath) {
+                            Write-Output "Iniciando script de reinicializacao e atualizacao..."
+                            Start-Process -FilePath $batchPath -WindowStyle Hidden
+                            
+                            Get-Process "WinToolKit" -ErrorAction SilentlyContinue | Stop-Process -Force
+                        } else {
+                            Write-Output "[ERRO] Script de atualizacao nao encontrado em $batchPath"
+                        }
                     }
                 }
             }

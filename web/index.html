@@ -43,7 +43,7 @@
                     <i class="fa-solid fa-terminal"></i>
                 </div>
                 <div class="brand-text">
-                    <h1>WinToolKit <span style="color:var(--cyan); font-weight:bold; font-size:11px; vertical-align:middle; margin-left:4px;">v1.0.9</span></h1>
+                    <h1>WinToolKit <span style="color:var(--cyan); font-weight:bold; font-size:11px; vertical-align:middle; margin-left:4px;">v1.0.11</span></h1>
                 </div>
             </div>
             
@@ -89,9 +89,14 @@
         <main class="main-content">
             <!-- Header -->
             <header class="app-header">
-                <div class="header-welcome">
+                <div class="header-welcome" id="header-welcome">
                     <h2>Ambiente Operacional Windows</h2>
                     <p>Utilitários automatizados para otimização de rotinas de suporte.</p>
+                </div>
+                <!-- Antigravity Style Update Pill -->
+                <div class="update-pill hidden" id="update-pill">
+                    <span class="update-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
+                    <span class="update-text">Downloading Update</span>
                 </div>
                 <div class="header-meta">
                     <div class="meta-item">
@@ -376,7 +381,7 @@
                         <div class="info-list" style="margin-top:15px;">
                             <div class="info-row">
                                 <span class="label">Versão Atual:</span>
-                                <span class="value" id="current-version-text" style="font-weight:bold; color:var(--cyan);">v1.0.9</span>
+                                <span class="value" id="current-version-text" style="font-weight:bold; color:var(--cyan);">v1.0.11</span>
                             </div>
                             <div class="info-row">
                                 <span class="label">Última Versão Disponível:</span>

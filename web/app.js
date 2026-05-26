@@ -2,7 +2,7 @@
 const API_BASE = ''; // Same host as the dashboard
 const DIAGNOSTICS_POLL_INTERVAL = 3000; // 3 seconds
 const CIRCUMFERENCE = 2 * Math.PI * 70; // 439.822
-const CURRENT_VERSION = 'v1.0.9';
+const CURRENT_VERSION = 'v1.0.11';
 
 let diagnosticsTimer = null;
 let activePollingJobs = new Map(); // jobId -> intervalId
@@ -451,57 +451,38 @@ async function performAutoUpdate() {
     const msgEl      = document.getElementById('update-status-msg');
     const banner     = document.getElementById('update-banner');
     const bannerDesc = document.getElementById('update-banner-desc');
+    const updatePill = document.getElementById('update-pill');
+    const updateText = updatePill ? updatePill.querySelector('.update-text') : null;
 
-    // Disable buttons while updating
     if (btnInstall) { btnInstall.disabled = true; btnInstall.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Baixando...'; }
     if (btnDo)      { btnDo.disabled = true; }
-
-    // Add progress bar to banner
-    if (banner && !document.getElementById('update-progress-wrap')) {
-        const wrap = document.createElement('div');
-        wrap.id = 'update-progress-wrap';
-        wrap.className = 'update-progress-bar-wrap';
-        wrap.style.cssText = 'position:absolute;bottom:0;left:0;right:0;border-radius:0 0 18px 18px;margin:0;';
-        const bar = document.createElement('div');
-        bar.id = 'update-progress-bar';
-        bar.className = 'update-progress-bar';
-        bar.style.width = '15%';
-        wrap.appendChild(bar);
-        banner.style.position = 'relative';
-        banner.style.overflow = 'hidden';
-        banner.appendChild(wrap);
-    }
 
     if (bannerDesc) bannerDesc.textContent = 'Baixando atualização em segundo plano...';
     if (msgEl) { msgEl.textContent = 'Baixando atualização automática...'; msgEl.style.color = 'var(--cyan)'; }
 
-    // Stay on current page, just log in background
-    logToConsole('[ATUALIZAÇÃO] Iniciando atualização automática do WinToolKit...', 'command');
+    // Antigravity style update UI
+    if (updatePill) {
+        updatePill.classList.remove('hidden');
+        updatePill.classList.remove('ready');
+        updatePill.onclick = null;
+        if (updateText) updateText.textContent = 'Downloading Update';
+    }
+
+    logToConsole('[ATUALIZAÇÃO] Iniciando download da atualização...', 'command');
 
     try {
         const res = await fetch(`${API_BASE}/api/action`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'auto_update' })
+            body: JSON.stringify({ action: 'download_update' })
         });
         if (!res.ok) throw new Error(`Servidor retornou HTTP ${res.status}`);
         const data = await res.json();
-        if (!data.success) throw new Error(data.message || 'Falha ao iniciar job de atualização.');
+        if (!data.success) throw new Error(data.message || 'Falha ao iniciar job de download.');
 
         const jobId = data.jobId;
-        logToConsole(`[ATUALIZAÇÃO] Processo alocado. Monitorando execução...`, 'info');
+        logToConsole(`[ATUALIZAÇÃO] Processo alocado. Monitorando download...`, 'info');
 
-        // Animate progress bar while polling
-        let fakeProgress = 15;
-        const progressInterval = setInterval(() => {
-            if (fakeProgress < 85) {
-                fakeProgress += Math.random() * 8;
-                const bar = document.getElementById('update-progress-bar');
-                if (bar) bar.style.width = Math.min(fakeProgress, 85) + '%';
-            }
-        }, 600);
-
-        // Poll job status
         const pollInterval = setInterval(async () => {
             try {
                 const statusRes = await fetch(`${API_BASE}/api/job-status?jobId=${jobId}`);
