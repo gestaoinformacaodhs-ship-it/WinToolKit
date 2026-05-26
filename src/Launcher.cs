@@ -114,42 +114,28 @@ namespace WinToolKit
             trayIcon.DoubleClick += OnOpenDashboard;
         }
 
-        private static Icon CreateTrayIcon()
+        private Icon CreateTrayIcon()
         {
+            // 1st priority: load app.ico from the same folder as the executable
             try
             {
-                using (Bitmap bmp = new Bitmap(16, 16))
+                string icoPath = Path.Combine(appDir, "app.ico");
+                if (File.Exists(icoPath))
                 {
-                    using (Graphics g = Graphics.FromImage(bmp))
-                    {
-                        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                        
-                        // Draw beautiful gradient circle
-                        using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(
-                            new Point(0, 0), new Point(16, 16),
-                            Color.FromArgb(6, 182, 212),  // Cyan
-                            Color.FromArgb(99, 102, 241) // Indigo
-                        ))
-                        {
-                            g.FillEllipse(brush, 0, 0, 15, 15);
-                        }
-
-                        // Draw a sleek white ">_" terminal prompt
-                        using (var pen = new Pen(Color.White, 1.5f))
-                        {
-                            g.DrawLine(pen, 4, 4, 7, 7);
-                            g.DrawLine(pen, 7, 7, 4, 10);
-                            g.DrawLine(pen, 7, 10, 11, 10);
-                        }
-                    }
-                    return Icon.FromHandle(bmp.GetHicon());
+                    return new Icon(icoPath, 16, 16);
                 }
             }
-            catch
+            catch { }
+
+            // 2nd priority: use icon embedded in the executable itself (set at compile time via /win32icon)
+            try
             {
-                // Fallback to default system icon if drawing fails
-                return SystemIcons.Application;
+                return Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
             }
+            catch { }
+
+            // Last resort fallback
+            return SystemIcons.Application;
         }
 
         private void StartBackend()
