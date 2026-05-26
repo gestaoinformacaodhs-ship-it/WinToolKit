@@ -1,8 +1,8 @@
-// Global Variables & Configuration
+﻿// Global Variables & Configuration
 const API_BASE = ''; // Same host as the dashboard
 const DIAGNOSTICS_POLL_INTERVAL = 3000; // 3 seconds
 const CIRCUMFERENCE = 2 * Math.PI * 70; // 439.822
-const CURRENT_VERSION = 'v1.0.12';
+const CURRENT_VERSION = 'v1.0.16';
 
 let diagnosticsTimer = null;
 let activePollingJobs = new Map(); // jobId -> intervalId
@@ -534,6 +534,15 @@ async function performAutoUpdate() {
                 logToConsole(`[ATUALIZAÇíO ERRO] Falha ao monitorar atualização: ${pollErr.message}`, 'error');
                 if (btnInstall) { btnInstall.disabled = false; btnInstall.innerHTML = '<i class="fa-solid fa-bolt"></i> Tentar Novamente'; }
                 if (btnDo) { btnDo.disabled = false; }
+                
+                if (updatePill) {
+                    updatePill.classList.remove('updating');
+                    updatePill.classList.add('ready');
+                    const spinner = updatePill.querySelector('.update-spinner');
+                    if (spinner) spinner.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                    if (updateText) updateText.textContent = 'Erro na Atualização';
+                    updatePill.onclick = performAutoUpdate; // Allow retry
+                }
             }
         }, 1500);
 

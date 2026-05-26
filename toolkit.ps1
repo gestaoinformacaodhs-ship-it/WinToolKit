@@ -419,6 +419,7 @@ try {
                 }
                 "download_update" {
                     $scriptBlock = {
+                        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
                         $repoBase   = "https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main"
                         $installDir = $using:PSScriptRoot
                         $tempDir    = $env:TEMP
@@ -433,12 +434,12 @@ try {
                                 $attempts++
                                 try {
                                     Invoke-WebRequest -Uri $Url -OutFile $Dest -UseBasicParsing -ErrorAction Stop
-                                    Write-Output "  OK: $Label baixado."
-                                    return $true
+                                    Write-Output "  [SUCESSO] $Label baixado."
+                                    return
                                 } catch {
                                     if ($attempts -ge 3) {
                                         Write-Output "[ERRO] Falha ao baixar $Label apos $attempts tentativas: $_"
-                                        return $false
+                                        throw "Falha no download de $Label"
                                     }
                                     Write-Output "  [AVISO] Tentativa $attempts falhou. Tentando novamente..."
                                     Start-Sleep -Seconds 2
@@ -446,24 +447,24 @@ try {
                             } while ($true)
                         }
 
-                        $webFiles = @(
-                            @{ Url = "$repoBase/web/index.html"; Dest = "$installDir\web\index.html"; Label = "index.html" },
-                            @{ Url = "$repoBase/web/style.css";  Dest = "$installDir\web\style.css";  Label = "style.css"  },
-                            @{ Url = "$repoBase/web/app.js";     Dest = "$installDir\web\app.js";     Label = "app.js"     }
-                        )
-                        $allOk = $true
-                        foreach ($f in $webFiles) {
-                            $ok = Invoke-FileDownload -Url $f.Url -Dest $f.Dest -Label $f.Label
-                            if (-not $ok) { $allOk = $false }
-                        }
+                        try {
+                            $webFiles = @(
+                                @{ Url = "$repoBase/web/index.html"; Dest = "$installDir\web\index.html"; Label = "index.html" },
+                                @{ Url = "$repoBase/web/style.css";  Dest = "$installDir\web\style.css";  Label = "style.css"  },
+                                @{ Url = "$repoBase/web/app.js";     Dest = "$installDir\web\app.js";     Label = "app.js"     }
+                            )
+                            foreach ($f in $webFiles) {
+                                Invoke-FileDownload -Url $f.Url -Dest $f.Dest -Label $f.Label
+                            }
 
-                        $exeOk = Invoke-FileDownload -Url "$repoBase/WinToolKit.exe" -Dest "$tempDir\WinToolKit_new.exe" -Label "WinToolKit.exe"
-                        $ps1Ok = Invoke-FileDownload -Url "$repoBase/toolkit.ps1"    -Dest "$tempDir\toolkit_new.ps1"   -Label "toolkit.ps1"
-                        Invoke-FileDownload -Url "$repoBase/version.json" -Dest "$tempDir\version_new.json" -Label "version.json" | Out-Null
-
-                        if (-not ($allOk -and $exeOk -and $ps1Ok)) {
+                            Invoke-FileDownload -Url "$repoBase/WinToolKit.exe" -Dest "$tempDir\WinToolKit_new.exe" -Label "WinToolKit.exe"
+                            Invoke-FileDownload -Url "$repoBase/toolkit.ps1"    -Dest "$tempDir\toolkit_new.ps1"   -Label "toolkit.ps1"
+                            Invoke-FileDownload -Url "$repoBase/version.json" -Dest "$tempDir\version_new.json" -Label "version.json"
+                            
+                            Write-Output "[SUCESSO] Todos os arquivos baixados com sucesso."
+                        } catch {
                             Write-Output "[ERRO] Alguns arquivos nao puderam ser baixados. Atualizacao cancelada."
-                            exit 1
+                            throw $_
                         }
 
                         $nl = [System.Environment]::NewLine
