@@ -48,6 +48,7 @@ Write-Host "------------------------------------------------------------" -Foreg
 $launcherArgs = @(
     "/target:winexe",
     "/out:$launcherOut",
+    "/win32icon:$icoPath",
     "/optimize+",
     "/reference:System.Windows.Forms.dll,System.Drawing.dll,System.Management.dll",
     $launcherSrc

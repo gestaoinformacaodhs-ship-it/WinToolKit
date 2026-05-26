@@ -235,41 +235,25 @@ namespace WinToolKit
             trayIcon.DoubleClick += OnOpenDashboard;
         }
 
-        private static Icon CreateTrayIcon()
+        private Icon CreateTrayIcon()
         {
+            // 1st priority: load app.ico from install directory (same as desktop shortcut icon)
+            try
+            {
+                string icoPath = Path.Combine(appDir, "app.ico");
+                if (File.Exists(icoPath))
+                    return new Icon(icoPath, 32, 32);
+            }
+            catch { }
+
+            // 2nd priority: icon embedded in the exe at compile time via /win32icon
             try
             {
                 return Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
             }
-            catch
-            {
-                try
-                {
-                    Bitmap bmp = new Bitmap(16, 16);
-                Graphics g = Graphics.FromImage(bmp);
-                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                System.Drawing.Drawing2D.LinearGradientBrush brush =
-                    new System.Drawing.Drawing2D.LinearGradientBrush(
-                        new Point(0, 0), new Point(16, 16),
-                        Color.FromArgb(6, 182, 212),
-                        Color.FromArgb(99, 102, 241)
-                    );
-                g.FillEllipse(brush, 0, 0, 15, 15);
-                Pen pen = new Pen(Color.White, 1.5f);
-                g.DrawLine(pen, 4, 4, 7, 7);
-                g.DrawLine(pen, 7, 7, 4, 10);
-                g.DrawLine(pen, 7, 10, 11, 10);
-                pen.Dispose();
-                brush.Dispose();
-                g.Dispose();
-                Icon icon = Icon.FromHandle(bmp.GetHicon());
-                return icon;
-            }
-            catch
-            {
-                return SystemIcons.Application;
-            }
-            }
+            catch { }
+
+            return SystemIcons.Application;
         }
 
         private void StartBackend()
