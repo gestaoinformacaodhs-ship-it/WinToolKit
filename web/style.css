@@ -635,6 +635,11 @@ body {
     box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
 }
 
+.bg-pink {
+    background: linear-gradient(135deg, #ec4899, #be185d);
+    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+}
+
 .tool-info {
     display: flex;
     flex-direction: column;
@@ -708,6 +713,16 @@ body {
 
 .btn-amber:hover {
     box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+    transform: scale(1.02);
+}
+
+.btn-pink {
+    background-color: #ec4899;
+    color: white;
+}
+
+.btn-pink:hover {
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.5);
     transform: scale(1.02);
 }
 

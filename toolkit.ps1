@@ -278,7 +278,7 @@ try {
             $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
             $regValue = "WinToolKit"
             $autostart = $false
-            if ((Get-ItemProperty -Path $regPath -Name $regValue -ErrorAction SilentlyContinue) -ne $null) {
+            if ($null -ne (Get-ItemProperty -Path $regPath -Name $regValue -ErrorAction SilentlyContinue)) {
                 $autostart = $true
             }
             Send-JsonResponse $context @{ autostart = $autostart }
