@@ -446,16 +446,25 @@ function Get-FileBase64($path) {
 
 $b64_launcher  = Get-FileBase64 (Join-Path $base "WinToolKit.exe")
 $b64_uninstaller = Get-FileBase64 (Join-Path $base "Desinstalar.exe")
-$b64_toolkit   = Get-FileBase64 (Join-Path $base "toolkit.ps1")
+
+# Read web files as Base64
 $b64_html      = Get-FileBase64 (Join-Path $base "web\index.html")
 $b64_css       = Get-FileBase64 (Join-Path $base "web\style.css")
 $b64_js        = Get-FileBase64 (Join-Path $base "web\app.js")
 
+# Inject web assets into toolkit.ps1 before encoding it
+Write-Host "  [OK] Injetando interface web no toolkit.ps1 (Enterprise Mode)..." -ForegroundColor Yellow
+$toolkitContent = Get-Content (Join-Path $base "toolkit.ps1") -Raw -Encoding UTF8
+$toolkitContent = $toolkitContent.Replace('"__INJECT_HTML__"', '"' + $b64_html + '"')
+$toolkitContent = $toolkitContent.Replace('"__INJECT_CSS__"', '"' + $b64_css + '"')
+$toolkitContent = $toolkitContent.Replace('"__INJECT_JS__"', '"' + $b64_js + '"')
+$injectedToolkitPath = Join-Path $env:TEMP "toolkit_injected.ps1"
+[System.IO.File]::WriteAllText($injectedToolkitPath, $toolkitContent, [System.Text.Encoding]::UTF8)
+$b64_toolkit   = Get-FileBase64 $injectedToolkitPath
+Write-Host "  [OK] Interface embutida com sucesso!" -ForegroundColor Green
+
 Write-Host "  [OK] WinToolKit.exe : $($b64_launcher.Length) chars base64" -ForegroundColor Gray
-Write-Host "  [OK] toolkit.ps1    : $($b64_toolkit.Length) chars base64" -ForegroundColor Gray
-Write-Host "  [OK] index.html     : $($b64_html.Length) chars base64" -ForegroundColor Gray
-Write-Host "  [OK] style.css      : $($b64_css.Length) chars base64" -ForegroundColor Gray
-Write-Host "  [OK] app.js         : $($b64_js.Length) chars base64" -ForegroundColor Gray
+Write-Host "  [OK] toolkit.ps1    : $($b64_toolkit.Length) chars base64 (com interface embutida)" -ForegroundColor Gray
 
 # ---- STEP 3: Generate self-contained Installer C# source ----
 Write-Host "[3/4] Gerando codigo-fonte do instalador auto-contido..." -ForegroundColor Yellow
@@ -483,9 +492,6 @@ namespace WinToolKit
         private static readonly string B64_LAUNCHER    = "$b64_launcher";
         private static readonly string B64_UNINSTALLER = "$b64_uninstaller";
         private static readonly string B64_TOOLKIT     = "$b64_toolkit";
-        private static readonly string B64_HTML     = "$b64_html";
-        private static readonly string B64_CSS      = "$b64_css";
-        private static readonly string B64_JS       = "$b64_js";
 
         private string targetDir = @"C:\Program Files\WinToolKit";
         private int currentStep = 1;
@@ -828,12 +834,7 @@ namespace WinToolKit
                     Log("Pasta de destino ja existe.");
                 }
 
-                string webDir = Path.Combine(targetDir, "web");
-                Log("Criando pasta web: " + webDir);
-                if (!Directory.Exists(webDir)) {
-                    Directory.CreateDirectory(webDir);
-                    Log("Pasta web criada.");
-                }
+
 
                 // Helper to write files with retry
                 Action<string, string> WriteFileWithRetry = (path, b64) => {
@@ -855,31 +856,26 @@ namespace WinToolKit
                 Log("Extraindo WinToolKit.exe...");
                 WriteFileWithRetry(Path.Combine(targetDir, "WinToolKit.exe"), B64_LAUNCHER);
 
-                SetProgress(40, "Extraindo toolkit.ps1...");
+                SetProgress(50, "Extraindo toolkit.ps1 (com interface embutida)...");
                 Log("Extraindo toolkit.ps1...");
                 WriteFileWithRetry(Path.Combine(targetDir, "toolkit.ps1"), B64_TOOLKIT);
 
-                SetProgress(55, "Extraindo interface Web — index.html...");
-                Log("Extraindo index.html...");
-                WriteFileWithRetry(Path.Combine(webDir, "index.html"), B64_HTML);
-
-                SetProgress(68, "Extraindo interface Web — style.css...");
-                Log("Extraindo style.css...");
-                WriteFileWithRetry(Path.Combine(webDir, "style.css"), B64_CSS);
-                Log("style.css extraido.");
-
-                SetProgress(80, "Extraindo interface Web — app.js...");
-                Log("Extraindo app.js...");
-                WriteFileWithRetry(Path.Combine(webDir, "app.js"), B64_JS);
-                Log("app.js extraido.");
-
-                SetProgress(88, "Extraindo Desinstalar.exe...");
+                SetProgress(80, "Extraindo Desinstalar.exe...");
                 Log("Extraindo Desinstalar.exe...");
                 WriteFileWithRetry(Path.Combine(targetDir, "Desinstalar.exe"), B64_UNINSTALLER);
                 Log("Desinstalar.exe extraido.");
 
-                SetProgress(92, "Finalizando extraindo...");
-                Thread.Sleep(300);
+                // Limpar pasta web antiga se existir (migracao para Enterprise mode)
+                string oldWebDir = Path.Combine(targetDir, "web");
+                if (Directory.Exists(oldWebDir)) {
+                    try {
+                        Log("Removendo pasta web/ antiga (migracao Enterprise)...");
+                        Directory.Delete(oldWebDir, true);
+                        Log("Pasta web/ removida com sucesso.");
+                    } catch (Exception exWeb) {
+                        Log("Aviso: nao foi possivel remover pasta web: " + exWeb.Message);
+                    }
+                }
 
                 SetProgress(100, "Instalacao concluida!");
                 Thread.Sleep(400);
@@ -990,7 +986,7 @@ namespace WinToolKit
                         key.SetValue("DisplayName", "WinToolKit - Suporte TI");
                         key.SetValue("DisplayIcon", targetExe + ",0");
                         key.SetValue("UninstallString", Path.Combine(targetDir, "Desinstalar.exe"));
-                        key.SetValue("DisplayVersion", "1.0.15");
+                        key.SetValue("DisplayVersion", "1.0.20");
                         key.SetValue("Publisher", "DHS Suporte TI");
                         key.SetValue("InstallLocation", targetDir);
                         key.SetValue("URLInfoAbout", "https://github.com/gestaoinformacaodhs-ship-it/WinToolKit");

@@ -595,9 +595,9 @@ body {
 }
 
 .tool-card:hover {
-    border-color: var(--panel-border-hover);
-    box-shadow: 0 10px 30px rgba(6, 182, 212, 0.03);
-    transform: translateY(-2px);
+    border-color: rgba(6, 182, 212, 0.4);
+    box-shadow: 0 10px 30px rgba(6, 182, 212, 0.1);
+    transform: translateY(-4px) scale(1.01);
 }
 
 .tool-icon {
@@ -798,6 +798,22 @@ body {
 
 .services-table tbody tr {
     transition: var(--transition-smooth);
+}
+
+/* Animations */
+@keyframes fadeInSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeInSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .services-table tbody tr:hover {

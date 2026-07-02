@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -26,7 +26,7 @@
                     <i class="fa-solid fa-terminal"></i>
                 </div>
                 <div class="brand-text">
-                    <h1>WinToolKit <span class="brand-version">v1.0.19</span></h1>
+                    <h1>WinToolKit <span class="brand-version">v1.0.21</span></h1>
                 </div>
             </div>
             
@@ -181,6 +181,10 @@
                                     <span class="value" id="info-os-name">Carregando...</span>
                                 </div>
                                 <div class="info-row">
+                                    <span class="label">Placa de Vídeo (GPU)</span>
+                                    <span class="value" id="info-gpu-model">Carregando...</span>
+                                </div>
+                                <div class="info-row">
                                     <span class="label">Versão & Build</span>
                                     <span class="value" id="info-os-version">Carregando...</span>
                                 </div>
@@ -287,6 +291,20 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Tool 5: Power Optimization -->
+                        <div class="tool-card">
+                            <div class="tool-icon bg-cyan" style="background: linear-gradient(135deg, #ec4899, #be185d);">
+                                <i class="fa-solid fa-bolt"></i>
+                            </div>
+                            <div class="tool-info">
+                                <h5>Otimização de Energia</h5>
+                                <p>Configura o plano de energia para Alto Desempenho, priorizando performance do sistema.</p>
+                                <button class="btn btn-primary" style="background-color: #ec4899; color: white;" onclick="runTool('optimize_power')">
+                                    <i class="fa-solid fa-bolt"></i> Otimizar
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -368,7 +386,7 @@
                         <div class="info-list mt-15">
                             <div class="info-row">
                                 <span class="label">Versão Atual:</span>
-                                <span class="value text-bold-cyan" id="current-version-text">v1.0.19</span>
+                                <span class="value text-bold-cyan" id="current-version-text">v1.0.21</span>
                             </div>
                             <div class="info-row">
                                 <span class="label">Última Versão Disponível:</span>

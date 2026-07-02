@@ -2,6 +2,11 @@ param(
     [string]$Token = $null
 )
 
+# ===== EMBEDDED WEB ASSETS (injected at compile time) =====
+$EMBEDDED_HTML = "__INJECT_HTML__"
+$EMBEDDED_CSS  = "__INJECT_CSS__"
+$EMBEDDED_JS   = "__INJECT_JS__"
+
 # Start transcript logging to diagnose silent crashes
 try {
     Start-Transcript -Path "$env:TEMP\WinToolKit_server.log" -Force -Append | Out-Null
@@ -107,6 +112,25 @@ function Send-HtmlResponse($context, $filePath, $mimeType) {
     $context.Response.Close()
 }
 
+function Send-EmbeddedResponse($context, $base64Content, $mimeType) {
+    try {
+        $bytes = [System.Convert]::FromBase64String($base64Content)
+        $context.Response.ContentType = $mimeType
+        $context.Response.ContentLength64 = $bytes.Length
+        
+        $context.Response.Headers.Add("X-Content-Type-Options", "nosniff")
+        $context.Response.Headers.Add("X-Frame-Options", "DENY")
+        $context.Response.Headers.Add("Content-Security-Policy", "default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com")
+        
+        $context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+    } catch {
+        $context.Response.StatusCode = 500
+    }
+    $context.Response.Close()
+}
+
+$isEmbedded = ($EMBEDDED_HTML -ne "__INJECT_HTML__")
+
 # 4. Main Request Listener Loop
 try {
     while ($listener.IsListening) {
@@ -175,6 +199,10 @@ try {
             $cpuPercent = $cpu.LoadPercentage
             if ($null -eq $cpuPercent) { $cpuPercent = 0 }
             
+            # GPU Specs
+            $gpu = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Select-Object -First 1
+            $gpuModel = if ($null -ne $gpu) { $gpu.Name } else { "N/A" }
+            
             # RAM specs
             $ramTotalBytes = $os.TotalVisibleMemorySize * 1KB
             $ramFreeBytes = $os.FreePhysicalMemory * 1KB
@@ -227,13 +255,14 @@ try {
                 diskFreeGb = [Math]::Round($diskFreeBytes / 1GB, 0)
                 ipAddress = $ipAddress
                 pingLatency = $pingLatency
+                gpuModel = $gpuModel
             }
             
             Send-JsonResponse $context $diagResponse
             
         } elseif ($url.StartsWith("/api/services") -and $method -eq "GET") {
             # List of core services
-            $serviceNames = @("Spooler", "wuauserv", "CryptSvc", "Dhcp", "Winmgmt")
+            $serviceNames = @("Spooler", "wuauserv", "CryptSvc", "Dhcp", "Winmgmt", "BITS", "SysMain", "TermService", "EventLog")
             $servicesList = Get-Service -Name $serviceNames -ErrorAction SilentlyContinue | ForEach-Object {
                 @{
                     Name = $_.Name
@@ -425,6 +454,18 @@ try {
                         Write-Output "[SUCESSO] Execução de integridade de imagem DISM concluída."
                     }
                 }
+                "optimize_power" {
+                    $scriptBlock = {
+                        Write-Output "Iniciando otimização de energia..."
+                        Write-Output "Alterando o plano de energia para Alto Desempenho..."
+                        try {
+                            powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+                            Write-Output "[SUCESSO] Plano de energia configurado para Alto Desempenho."
+                        } catch {
+                            Write-Output "[ERRO] Falha ao configurar plano de energia."
+                        }
+                    }
+                }
                 "install_update" {
                     # Legacy fallback
                     $scriptBlock = {
@@ -435,87 +476,46 @@ try {
                 "download_update" {
                     $scriptBlock = {
                         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-                        $repoBase   = "https://raw.githubusercontent.com/gestaoinformacaodhs-ship-it/WinToolKit/main"
-                        $installDir = $using:PSScriptRoot
+                        $repoBase   = "https://github.com/gestaoinformacaodhs-ship-it/WinToolKit/releases/latest/download"
                         $tempDir    = $env:TEMP
+                        $installerPath = "$tempDir\WinToolKit_Update.exe"
 
-                        Write-Output "Iniciando download da atualizacao do WinToolKit..."
+                        Write-Output "Iniciando download do instalador atualizado..."
                         
-                        function Invoke-FileDownload {
-                            param([string]$Url, [string]$Dest, [string]$Label)
-                            Write-Output "Baixando $Label..."
-                            $attempts = 0
-                            do {
-                                $attempts++
-                                try {
-                                    Invoke-WebRequest -Uri $Url -OutFile $Dest -UseBasicParsing -ErrorAction Stop
-                                    Write-Output "  [SUCESSO] $Label baixado."
-                                    return
-                                } catch {
-                                    if ($attempts -ge 3) {
-                                        Write-Output "[ERRO] Falha ao baixar $Label apos $attempts tentativas: $_"
-                                        throw "Falha no download de $Label"
-                                    }
-                                    Write-Output "  [AVISO] Tentativa $attempts falhou. Tentando novamente..."
-                                    Start-Sleep -Seconds 2
+                        $attempts = 0
+                        $downloaded = $false
+                        do {
+                            $attempts++
+                            try {
+                                Write-Output "  Tentativa $attempts de 3..."
+                                Invoke-WebRequest -Uri "$repoBase/Instalar.exe" -OutFile $installerPath -UseBasicParsing -ErrorAction Stop
+                                Write-Output "  [SUCESSO] Instalador baixado com sucesso."
+                                $downloaded = $true
+                            } catch {
+                                if ($attempts -ge 3) {
+                                    Write-Output "[ERRO] Falha ao baixar instalador apos $attempts tentativas: $_"
+                                    throw "Falha no download do instalador"
                                 }
-                            } while ($true)
-                        }
-
-                        try {
-                            $webFiles = @(
-                                @{ Url = "$repoBase/web/index.html"; Dest = "$installDir\web\index.html"; Label = "index.html" },
-                                @{ Url = "$repoBase/web/style.css";  Dest = "$installDir\web\style.css";  Label = "style.css"  },
-                                @{ Url = "$repoBase/web/app.js";     Dest = "$installDir\web\app.js";     Label = "app.js"     }
-                            )
-                            foreach ($f in $webFiles) {
-                                Invoke-FileDownload -Url $f.Url -Dest $f.Dest -Label $f.Label
+                                Write-Output "  [AVISO] Tentativa $attempts falhou. Tentando novamente..."
+                                Start-Sleep -Seconds 2
                             }
+                        } while (-not $downloaded)
 
-                            Invoke-FileDownload -Url "$repoBase/WinToolKit.exe" -Dest "$tempDir\WinToolKit_new.exe" -Label "WinToolKit.exe"
-                            Invoke-FileDownload -Url "$repoBase/toolkit.ps1"    -Dest "$tempDir\toolkit_new.ps1"   -Label "toolkit.ps1"
-                            Invoke-FileDownload -Url "$repoBase/version.json" -Dest "$tempDir\version_new.json" -Label "version.json"
-                            
-                            Write-Output "[SUCESSO] Todos os arquivos baixados com sucesso."
-                        } catch {
-                            Write-Output "[ERRO] Alguns arquivos nao puderam ser baixados. Atualizacao cancelada."
-                            throw $_
-                        }
-
-                        $nl = [System.Environment]::NewLine
-                        $bat  = "@echo off" + $nl
-                        $bat += "chcp 65001 >nul" + $nl
-                        $bat += "title WinToolKit - Aplicando Atualizacao" + $nl
-                        $bat += "echo Aplicando atualizacao, aguarde..." + $nl
-                        $bat += "timeout /t 3 /nobreak >nul" + $nl
-                        $bat += "copy /y " + [char]34 + "$tempDir\WinToolKit_new.exe" + [char]34 + " " + [char]34 + "$installDir\WinToolKit.exe" + [char]34 + " >nul 2>&1" + $nl
-                        $bat += "copy /y " + [char]34 + "$tempDir\toolkit_new.ps1" + [char]34 + "   " + [char]34 + "$installDir\toolkit.ps1" + [char]34 + "    >nul 2>&1" + $nl
-                        $bat += "copy /y " + [char]34 + "$tempDir\version_new.json" + [char]34 + "  " + [char]34 + "$installDir\version.json" + [char]34 + "   >nul 2>&1" + $nl
-                        $bat += "del " + [char]34 + "$tempDir\WinToolKit_new.exe" + [char]34 + " >nul 2>&1" + $nl
-                        $bat += "del " + [char]34 + "$tempDir\toolkit_new.ps1" + [char]34 + " >nul 2>&1" + $nl
-                        $bat += "del " + [char]34 + "$tempDir\version_new.json" + [char]34 + " >nul 2>&1" + $nl
-                        $bat += "echo Atualizacao aplicada. Reiniciando..." + $nl
-                        $bat += "timeout /t 1 /nobreak >nul" + $nl
-                        $bat += "start " + [char]34 + [char]34 + " " + [char]34 + "$installDir\WinToolKit.exe" + [char]34 + $nl
-                        $bat += "del " + [char]34 + "%~f0" + [char]34 + $nl
-
-                        $batchPath = "$tempDir\wintoolkit_updater.bat"
-                        [System.IO.File]::WriteAllText($batchPath, $bat)
-                        
                         Write-Output "[SUCESSO] Todos os arquivos estao prontos para a atualizacao."
                     }
                 }
                 "apply_update" {
                     $scriptBlock = {
                         $tempDir = $env:TEMP
-                        $batchPath = "$tempDir\wintoolkit_updater.bat"
-                        if (Test-Path $batchPath) {
-                            Write-Output "Iniciando script de reinicializacao e atualizacao..."
-                            Start-Process -FilePath $batchPath -WindowStyle Hidden
+                        $installerPath = "$tempDir\WinToolKit_Update.exe"
+                        if (Test-Path $installerPath) {
+                            Write-Output "Executando instalador silencioso..."
+                            Start-Process -FilePath $installerPath -WindowStyle Hidden
+                            Start-Sleep -Seconds 2
                             
                             Get-Process "WinToolKit" -ErrorAction SilentlyContinue | Stop-Process -Force
                         } else {
-                            Write-Output "[ERRO] Script de atualizacao nao encontrado em $batchPath"
+                            Write-Output "[ERRO] Instalador nao encontrado em $installerPath"
                         }
                     }
                 }
@@ -576,38 +576,53 @@ try {
             $context.Response.Close()
             
         } else {
-            # Serve Static Web Assets
-            $webDir = Join-Path $PSScriptRoot "web"
-            $fullWebDir = (Resolve-Path $webDir).Path
-            $mimeType = "application/octet-stream"
-            $resolvedPath = ""
-            
+            # Serve Static Web Assets (from memory if embedded, from disk otherwise)
             $cleanPath = $url.Split('?')[0]
-            if ($cleanPath -eq "/" -or $cleanPath -eq "/index.html" -or [string]::IsNullOrEmpty($cleanPath.Trim('/'))) {
-                $resolvedPath = Join-Path $webDir "index.html"
-                $mimeType = "text/html; charset=utf-8"
-            } else {
-                # Extract filename without query params
-                $cleanUrl = $url.Split('?')[0].TrimStart('/')
-                $resolvedPath = Join-Path $webDir $cleanUrl
-                
-                if ($url.Contains(".css")) { $mimeType = "text/css" }
-                elseif ($url.Contains(".js")) { $mimeType = "application/javascript" }
-                elseif ($url.Contains(".png")) { $mimeType = "image/png" }
-                elseif ($url.Contains(".ico")) { $mimeType = "image/x-icon" }
-            }
             
-            if (Test-Path $resolvedPath -PathType Leaf) {
-                $canonicalPath = (Resolve-Path $resolvedPath).Path
-                if ($canonicalPath.StartsWith($fullWebDir)) {
-                    Send-HtmlResponse $context $canonicalPath $mimeType
+            if ($isEmbedded) {
+                # --- ENTERPRISE MODE: serve from RAM ---
+                if ($cleanPath -eq "/" -or $cleanPath -eq "/index.html" -or [string]::IsNullOrEmpty($cleanPath.Trim('/'))) {
+                    Send-EmbeddedResponse $context $EMBEDDED_HTML "text/html; charset=utf-8"
+                } elseif ($cleanPath -eq "/style.css") {
+                    Send-EmbeddedResponse $context $EMBEDDED_CSS "text/css"
+                } elseif ($cleanPath -eq "/app.js") {
+                    Send-EmbeddedResponse $context $EMBEDDED_JS "application/javascript"
                 } else {
-                    $context.Response.StatusCode = 403
+                    $context.Response.StatusCode = 404
                     $context.Response.Close()
                 }
             } else {
-                $context.Response.StatusCode = 404
-                $context.Response.Close()
+                # --- DEV MODE: serve from disk (web/ folder) ---
+                $webDir = Join-Path $PSScriptRoot "web"
+                $fullWebDir = (Resolve-Path $webDir).Path
+                $mimeType = "application/octet-stream"
+                $resolvedPath = ""
+                
+                if ($cleanPath -eq "/" -or $cleanPath -eq "/index.html" -or [string]::IsNullOrEmpty($cleanPath.Trim('/'))) {
+                    $resolvedPath = Join-Path $webDir "index.html"
+                    $mimeType = "text/html; charset=utf-8"
+                } else {
+                    $cleanUrl = $cleanPath.TrimStart('/')
+                    $resolvedPath = Join-Path $webDir $cleanUrl
+                    
+                    if ($cleanPath.Contains(".css")) { $mimeType = "text/css" }
+                    elseif ($cleanPath.Contains(".js")) { $mimeType = "application/javascript" }
+                    elseif ($cleanPath.Contains(".png")) { $mimeType = "image/png" }
+                    elseif ($cleanPath.Contains(".ico")) { $mimeType = "image/x-icon" }
+                }
+                
+                if (Test-Path $resolvedPath -PathType Leaf) {
+                    $canonicalPath = (Resolve-Path $resolvedPath).Path
+                    if ($canonicalPath.StartsWith($fullWebDir)) {
+                        Send-HtmlResponse $context $canonicalPath $mimeType
+                    } else {
+                        $context.Response.StatusCode = 403
+                        $context.Response.Close()
+                    }
+                } else {
+                    $context.Response.StatusCode = 404
+                    $context.Response.Close()
+                }
             }
         }
     }

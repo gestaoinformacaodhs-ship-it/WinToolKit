@@ -1,8 +1,8 @@
-﻿// Global Variables & Configuration
+// Global Variables & Configuration
 const API_BASE = ''; // Same host as the dashboard
 const DIAGNOSTICS_POLL_INTERVAL = 3000; // 3 seconds
 const CIRCUMFERENCE = 2 * Math.PI * 70; // 439.822
-const CURRENT_VERSION = 'v1.0.19';
+const CURRENT_VERSION = 'v1.0.21';
 
 let diagnosticsTimer = null;
 let activePollingJobs = new Map(); // jobId -> intervalId
@@ -54,6 +54,10 @@ function setupNavigation() {
             
             const section = sections[item.id];
             if (section) {
+                // Add fade-in animation by resetting class
+                section.classList.remove('fade-in');
+                void section.offsetWidth; // trigger reflow
+                section.classList.add('fade-in');
                 section.classList.remove('hidden');
                 
                 // If console section, autoscroll to bottom
@@ -98,6 +102,7 @@ async function fetchDiagnostics() {
         document.getElementById('info-hostname').textContent = data.hostname || '--';
         document.getElementById('info-username').textContent = data.currentUser || '--';
         document.getElementById('info-os-name').textContent = data.osName || '--';
+        document.getElementById('info-gpu-model').textContent = data.gpuModel || '--';
         document.getElementById('info-os-version').textContent = data.osVersion || '--';
         document.getElementById('info-uptime').textContent = data.uptime || '--';
         document.getElementById('info-install-date').textContent = data.installDate || '--';
@@ -168,6 +173,7 @@ async function runTool(toolKey) {
         case 'gpupdate': actionFriendlyName = 'Atualização de Políticas (GPUPDATE)'; break;
         case 'sfc_scan': actionFriendlyName = 'Verificação de Arquivos de Sistema (SFC)'; break;
         case 'dism_repair': actionFriendlyName = 'Reparo de Imagem do Windows (DISM)'; break;
+        case 'optimize_power': actionFriendlyName = 'Otimização de Energia (Alto Desempenho)'; break;
         default: actionFriendlyName = 'Operação do Sistema';
     }
     
