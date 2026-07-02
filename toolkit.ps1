@@ -477,11 +477,12 @@ try {
                 "download_update" {
                     $scriptBlock = {
                         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-                        $repoBase   = "https://github.com/gestaoinformacaodhs-ship-it/WinToolKit/releases/latest/download"
+                        $repoZip   = "https://github.com/gestaoinformacaodhs-ship-it/WinToolKit/archive/refs/heads/main.zip"
                         $tempDir    = $env:TEMP
-                        $installerPath = "$tempDir\WinToolKit_Update.exe"
+                        $zipPath = "$tempDir\WinToolKit_Update.zip"
+                        $extractPath = "$tempDir\WinToolKit_Extract"
 
-                        Write-Output "Iniciando download do instalador atualizado..."
+                        Write-Output "Iniciando download da atualização a partir do código-fonte..."
                         
                         $attempts = 0
                         $downloaded = $false
@@ -489,34 +490,63 @@ try {
                             $attempts++
                             try {
                                 Write-Output "  Tentativa $attempts de 3..."
-                                Invoke-WebRequest -Uri "$repoBase/Instalar.exe" -OutFile $installerPath -UseBasicParsing -ErrorAction Stop
-                                Write-Output "  [SUCESSO] Instalador baixado com sucesso."
+                                Invoke-WebRequest -Uri $repoZip -OutFile $zipPath -UseBasicParsing -ErrorAction Stop
+                                Write-Output "  [SUCESSO] Atualização baixada com sucesso."
                                 $downloaded = $true
                             } catch {
                                 if ($attempts -ge 3) {
-                                    Write-Output "[ERRO] Falha ao baixar instalador apos $attempts tentativas: $_"
-                                    throw "Falha no download do instalador"
+                                    Write-Output "[ERRO] Falha ao baixar atualização: $_"
+                                    throw "Falha no download da atualização"
                                 }
                                 Write-Output "  [AVISO] Tentativa $attempts falhou. Tentando novamente..."
                                 Start-Sleep -Seconds 2
                             }
                         } while (-not $downloaded)
 
+                        Write-Output "Extraindo os arquivos atualizados..."
+                        if (Test-Path $extractPath) { Remove-Item $extractPath -Recurse -Force -ErrorAction SilentlyContinue }
+                        Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
+                        
                         Write-Output "[SUCESSO] Todos os arquivos estao prontos para a atualizacao."
                     }
                 }
                 "apply_update" {
                     $scriptBlock = {
                         $tempDir = $env:TEMP
-                        $installerPath = "$tempDir\WinToolKit_Update.exe"
-                        if (Test-Path $installerPath) {
-                            Write-Output "Executando instalador silencioso..."
-                            Start-Process -FilePath $installerPath -WindowStyle Hidden
-                            Start-Sleep -Seconds 2
+                        $extractPath = "$tempDir\WinToolKit_Extract\WinToolKit-main"
+                        
+                        if (Test-Path $extractPath) {
+                            Write-Output "Criando script de substituição de arquivos..."
+                            $updaterBat = "$tempDir\apply_wintoolkit_update.bat"
+                            $installDir = $PSScriptRoot
                             
+                            $batContent = @"
+@echo off
+echo Aguardando encerramento do WinToolKit...
+timeout /t 3 /nobreak >nul
+taskkill /f /im WinToolKit.exe >nul 2>&1
+taskkill /f /im powershell.exe /fi "WINDOWTITLE eq WinToolKit*" >nul 2>&1
+echo Copiando novos arquivos...
+xcopy /s /e /y /q "$extractPath\*" "$installDir\" >nul
+echo Reiniciando WinToolKit...
+cd /d "$installDir"
+if exist "WinToolKit.exe" (
+    start "" "WinToolKit.exe"
+) else (
+    start powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File "toolkit.ps1"
+)
+del "%~f0"
+"@
+                            Set-Content -Path $updaterBat -Value $batContent -Encoding OEM
+                            
+                            Write-Output "Iniciando processo de substituição..."
+                            Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$updaterBat`"" -WindowStyle Hidden
+                            
+                            Start-Sleep -Seconds 1
                             Get-Process "WinToolKit" -ErrorAction SilentlyContinue | Stop-Process -Force
+                            Stop-Process -Id $PID -Force
                         } else {
-                            Write-Output "[ERRO] Instalador nao encontrado em $installerPath"
+                            Write-Output "[ERRO] Arquivos extraídos não encontrados em $extractPath"
                         }
                     }
                 }
